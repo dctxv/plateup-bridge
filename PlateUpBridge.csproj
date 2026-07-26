@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>PlateUpBridge</AssemblyName>
+    <RootNamespace>PlateUpBridge</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+
+    <!-- EDIT THIS if your Steam library is elsewhere. Note the doubled PlateUp\PlateUp. -->
+    <GameDir>C:\Program Files (x86)\Steam\steamapps\common\PlateUp\PlateUp</GameDir>
+    <ManagedDir>$(GameDir)\PlateUp_Data\Managed</ManagedDir>
+    <ModDir>$(GameDir)\Mods\PlateUpBridge</ModDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Harmony: pulled from NuGet and shipped alongside the mod. -->
+    <PackageReference Include="Lib.Harmony" Version="2.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Game + Unity assemblies. Private=false: never copy these next to the mod. -->
+    <Reference Include="Unity.Entities;Unity.Collections;Unity.Mathematics;UnityEngine;UnityEngine.CoreModule;UnityEngine.InputLegacyModule;Kitchen.Common;Kitchen.GameData;Controllers;KitchenMods;Newtonsoft.Json;Assembly-CSharp">
+      <HintPath>$(ManagedDir)\%(Identity).dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="Deploy" AfterTargets="Build">
+    <MakeDir Directories="$(ModDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModDir)" />
+    <Copy SourceFiles="$(TargetDir)0Harmony.dll" DestinationFolder="$(ModDir)" Condition="Exists('$(TargetDir)0Harmony.dll')" />
+    <Message Importance="high" Text="Deployed to $(ModDir)" />
+  </Target>
+
+</Project>
