@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using Controllers;
 using HarmonyLib;
+using Kitchen;
 using UnityEngine;
 
 namespace PlateUpBridge
@@ -26,6 +28,36 @@ namespace PlateUpBridge
             if (!Bridge.Override) return;
             input_state = Bridge.Injected;
             __result = true;
+        }
+    }
+
+    /// <summary>
+    /// While bridge control is active, suppress the game's device producer so the
+    /// authoritative input queue receives exactly one frame from BridgeInputSystem.
+    /// F9 remains available because it is polled through UnityEngine.Input.
+    /// </summary>
+    [HarmonyPatch(
+        typeof(InputSource),
+        "SetInputUpdate",
+        new Type[] { typeof(int), typeof(bool), typeof(InputState) })]
+    public static class SetInputUpdatePatch
+    {
+        static bool Prefix()
+        {
+            return !Bridge.Override;
+        }
+    }
+
+    /// <summary>
+    /// Records queue depth immediately before its one-per-tick drain. With bridge
+    /// override active this should remain at one.
+    /// </summary>
+    [HarmonyPatch(typeof(InputQueue), nameof(InputQueue.ApplyUpdates))]
+    public static class InputQueueDepthPatch
+    {
+        static void Prefix(Queue<InputState> ___Queue)
+        {
+            Bridge.InputQueueDepth = ___Queue.Count;
         }
     }
 

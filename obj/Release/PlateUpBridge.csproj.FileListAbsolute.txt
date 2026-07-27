@@ -9,3 +9,4 @@ C:\dev\plateup-bridge\obj\Release\PlateUpBridge.dll
 C:\dev\plateup-bridge\obj\Release\PlateUpBridge.pdb
 C:\dev\plateup-bridge\bin\Release\0Harmony.dll
 C:\dev\plateup-bridge\obj\Release\PlateUpB.735342B9.Up2Date
+C:\dev\plateup-bridge\obj\Release\PlateUpBridge.sourcelink.json

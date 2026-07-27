@@ -22,6 +22,9 @@ import json
 import math
 import time
 
+import win32file
+import win32pipe
+
 
 PIPE = r"\\.\pipe\plateup_bridge"
 
@@ -29,7 +32,7 @@ PIPE = r"\\.\pipe\plateup_bridge"
 class PlateUpBridge:
     def __init__(self, path=PIPE):
         self.path = path
-        self._f = None
+        self._h = None
         self._buf = b""
         self.tick = 0
 
@@ -39,18 +42,21 @@ class PlateUpBridge:
         deadline = time.time() + timeout
         while time.time() < deadline:
             try:
-                self._f = open(self.path, "r+b", buffering=0)
+                self._h = win32file.CreateFile(
+                    self.path,
+                    win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+                    0, None, win32file.OPEN_EXISTING, 0, None)
+                win32pipe.SetNamedPipeHandleState(
+                    self._h, win32pipe.PIPE_READMODE_BYTE, None, None)
                 return
-            except OSError:
+            except Exception:
                 time.sleep(0.5)
-        raise TimeoutError(
-            "no pipe. Is PlateUp running with the bridge mod loaded?"
-        )
+        raise TimeoutError("no pipe")
 
     def close(self):
-        if self._f:
-            self._f.close()
-            self._f = None
+        if getattr(self, "_h", None):
+            win32file.CloseHandle(self._h)
+            self._h = None
 
     def __enter__(self):
         self.connect()
@@ -61,10 +67,17 @@ class PlateUpBridge:
 
     # ---- io ---------------------------------------------------------
 
+    def _read_raw(self, n=4096):
+        _, data = win32file.ReadFile(self._h, n)
+        return data
+
+    def _write_raw(self, data):
+        win32file.WriteFile(self._h, data)
+
     def recv(self):
         """Block until one observation frame arrives. Returns a dict."""
         while b"\n" not in self._buf:
-            chunk = self._f.read(4096)
+            chunk = self._read_raw()
             if not chunk:
                 raise ConnectionError("pipe closed")
             self._buf += chunk
@@ -86,7 +99,7 @@ class PlateUpBridge:
             "StopMoving": bool(stop),
             "Request": request,
         }
-        self._f.write((json.dumps(frame) + "\n").encode("utf-8"))
+        self._write_raw((json.dumps(frame) + "\n").encode("utf-8"))
 
     def idle(self):
         self.send()
@@ -142,7 +155,7 @@ def walk_to(bridge, tx, tz, tol=0.25, max_ticks=600):
             return True
 
         # ease off near the target so we do not oscillate
-        scale = min(1.0, dist / 0.8)
+        scale = max(0.55, min(1.0, dist / 0.8))
         bridge.send(move=(mx * scale, mz * scale))
 
     bridge.idle()

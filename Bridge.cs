@@ -2,8 +2,11 @@ using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using Controllers;
+using Microsoft.Win32.SafeHandles;
 using UnityEngine;
 
 namespace PlateUpBridge
@@ -13,7 +16,7 @@ namespace PlateUpBridge
     /// </summary>
     public class BridgeAction
     {
-        public long Tick;
+        public long Tick = -1;
         public float MoveX;
         public float MoveY;
         public bool Grab;
@@ -26,20 +29,76 @@ namespace PlateUpBridge
         public GameStateRequest ParsedRequest()
         {
             if (string.IsNullOrEmpty(Request)) return GameStateRequest.None;
-            try { return (GameStateRequest)Enum.Parse(typeof(GameStateRequest), Request, true); }
-            catch { return GameStateRequest.None; }
+            switch (Request.Trim().ToLowerInvariant())
+            {
+                case "none": return GameStateRequest.None;
+                case "inlocalmenu": return GameStateRequest.InLocalMenu;
+                case "startpractice": return GameStateRequest.StartPractice;
+                case "instantjoin": return GameStateRequest.InstantJoin;
+                default: return GameStateRequest.None;
+            }
         }
     }
 
     /// <summary>
-    /// Named pipe server + shared state. Everything here is touched from both the
-    /// Unity main thread and the pipe threads, so it is all lock-free or volatile.
+    /// Named pipe server + shared state. Connected crosses between the pipe and Unity
+    /// threads and must remain volatile. Tick, action metadata, queue depth, Override,
+    /// and Injected are main-thread-only; never read or write them from a pipe thread.
     /// </summary>
     public static class Bridge
     {
         public const string PipeName = "plateup_bridge";
         public const int ProtocolVersion = 1;
         public const int MaxOutboundBacklog = 64;
+
+        const uint PipeAccessDuplex = 0x00000003;
+        const uint FileFlagOverlapped = 0x40000000;
+        const int ErrorIoPending = 997;
+        const int ErrorPipeConnected = 535;
+        const int ErrorBrokenPipe = 109;
+        const int ErrorNoData = 232;
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct OverlappedData
+        {
+            public IntPtr Internal;
+            public IntPtr InternalHigh;
+            public uint Offset;
+            public uint OffsetHigh;
+            public IntPtr EventHandle;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern IntPtr CreateNamedPipe(
+            string name,
+            uint openMode,
+            uint pipeMode,
+            uint maxInstances,
+            uint outBufferSize,
+            uint inBufferSize,
+            uint defaultTimeout,
+            IntPtr securityAttributes);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool ConnectNamedPipe(
+            SafePipeHandle pipe,
+            ref OverlappedData overlapped);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool GetOverlappedResult(
+            SafePipeHandle pipe,
+            ref OverlappedData overlapped,
+            out uint transferred,
+            bool wait);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool PeekNamedPipe(
+            SafePipeHandle pipe,
+            IntPtr buffer,
+            uint bufferSize,
+            out uint bytesRead,
+            out uint bytesAvailable,
+            out uint bytesLeftThisMessage);
 
         // Wire traffic.
         public static readonly ConcurrentQueue<string> Inbound = new ConcurrentQueue<string>();
@@ -50,6 +109,9 @@ namespace PlateUpBridge
         public static volatile bool Override;          // master switch, F9
         public static long Tick;                        // incremented by the input system
         public static long LastActionTick;              // tick we last received an action on
+        public static long AppliedActionTick = -1;       // action tick enqueued this sim frame
+        public static int InputQueueDepth;               // depth before ApplyUpdates drains once
+        public static long DroppedOutboundFrames;
 
         /// <summary>
         /// The InputState the Harmony patch feeds back to the game's own device read.
@@ -79,7 +141,11 @@ namespace PlateUpBridge
         public static void Send(string json)
         {
             if (!Connected) return;
-            if (Outbound.Count > MaxOutboundBacklog) return;   // client is not draining; drop
+            if (Outbound.Count > MaxOutboundBacklog)
+            {
+                Interlocked.Increment(ref DroppedOutboundFrames);
+                return;
+            }
             Outbound.Enqueue(json);
         }
 
@@ -89,11 +155,8 @@ namespace PlateUpBridge
             {
                 try
                 {
-                    using (var pipe = new NamedPipeServerStream(
-                        PipeName, PipeDirection.InOut, 1,
-                        PipeTransmissionMode.Byte, PipeOptions.None, 1 << 16, 1 << 16))
+                    using (var pipe = CreateConnectedPipe())
                     {
-                        pipe.WaitForConnection();
                         if (!_running) return;
 
                         Drain(Inbound);
@@ -102,27 +165,12 @@ namespace PlateUpBridge
                         _warned = false;
                         Debug.Log("[BRIDGE] client connected");
 
-                        var reader = new StreamReader(pipe);
-                        var writer = new StreamWriter(pipe) { AutoFlush = true };
-
-                        var readThread = new Thread(() => ReadLoop(reader, pipe))
-                        { IsBackground = true, Name = "PlateUpBridgeRead" };
-                        readThread.Start();
-
-                        // This thread owns writing.
-                        while (_running && pipe.IsConnected)
-                        {
-                            string msg;
-                            if (Outbound.TryDequeue(out msg)) writer.WriteLine(msg);
-                            else Thread.Sleep(1);
-                        }
-
-                        readThread.Join(500);
+                        PumpConnection(pipe);
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (!_warned) { Debug.Log("[BRIDGE] pipe error: " + ex.Message); _warned = true; }
+                    if (!_warned) { Debug.Log("[BRIDGE] pipe error: " + ex); _warned = true; }
                 }
                 finally
                 {
@@ -134,21 +182,111 @@ namespace PlateUpBridge
             }
         }
 
-        static void ReadLoop(StreamReader reader, NamedPipeServerStream pipe)
+        static void PumpConnection(NamedPipeServerStream pipe)
         {
+            var readBuffer = new byte[4096];
+            string pending = "";
+
+            while (_running && pipe.IsConnected)
+            {
+                bool worked = false;
+
+                string message;
+                while (Outbound.TryDequeue(out message))
+                {
+                    var bytes = Encoding.UTF8.GetBytes(message + "\n");
+                    pipe.Write(bytes, 0, bytes.Length);
+                    pipe.Flush();
+                    worked = true;
+                }
+
+                uint ignored;
+                uint available;
+                uint left;
+                if (!PeekNamedPipe(
+                    pipe.SafePipeHandle,
+                    IntPtr.Zero,
+                    0,
+                    out ignored,
+                    out available,
+                    out left))
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    if (error == ErrorBrokenPipe || error == ErrorNoData) break;
+                    throw new IOException("PeekNamedPipe failed: " + error);
+                }
+
+                if (available > 0)
+                {
+                    int count = (int)Math.Min((uint)readBuffer.Length, available);
+                    int read = pipe.Read(readBuffer, 0, count);
+                    if (read <= 0) break;
+
+                    pending += Encoding.UTF8.GetString(readBuffer, 0, read);
+                    int newline;
+                    while ((newline = pending.IndexOf('\n')) >= 0)
+                    {
+                        string line = pending.Substring(0, newline).TrimEnd('\r');
+                        pending = pending.Substring(newline + 1);
+                        if (line.Length > 0) Inbound.Enqueue(line);
+                    }
+                    worked = true;
+                }
+
+                if (!worked) Thread.Sleep(1);
+            }
+        }
+
+        static NamedPipeServerStream CreateConnectedPipe()
+        {
+            var rawHandle = CreateNamedPipe(
+                @"\\.\pipe\" + PipeName,
+                PipeAccessDuplex | FileFlagOverlapped,
+                0,
+                1,
+                1 << 16,
+                1 << 16,
+                0,
+                IntPtr.Zero);
+
+            if (rawHandle == new IntPtr(-1))
+                throw new IOException("CreateNamedPipe failed: " + Marshal.GetLastWin32Error());
+
+            var handle = new SafePipeHandle(rawHandle, true);
+
             try
             {
-                while (_running && pipe.IsConnected)
+                using (var connected = new EventWaitHandle(false, EventResetMode.ManualReset))
                 {
-                    var line = reader.ReadLine();
-                    if (line == null) break;
-                    if (line.Length == 0) continue;
-                    Inbound.Enqueue(line);
+                    var overlapped = new OverlappedData
+                    {
+                        EventHandle = connected.SafeWaitHandle.DangerousGetHandle()
+                    };
+
+                    if (!ConnectNamedPipe(handle, ref overlapped))
+                    {
+                        int error = Marshal.GetLastWin32Error();
+                        if (error == ErrorIoPending)
+                        {
+                            connected.WaitOne();
+                            uint transferred;
+                            if (!GetOverlappedResult(handle, ref overlapped, out transferred, false))
+                                throw new IOException("ConnectNamedPipe failed: " + Marshal.GetLastWin32Error());
+                        }
+                        else if (error != ErrorPipeConnected)
+                        {
+                            throw new IOException("ConnectNamedPipe failed: " + error);
+                        }
+                    }
                 }
+
+                return new NamedPipeServerStream(
+                    PipeDirection.InOut, true, true, handle);
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.Log("[BRIDGE] read loop ended: " + ex.Message);
+                handle.Dispose();
+                throw;
             }
         }
 
