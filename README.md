@@ -203,7 +203,8 @@ the menu navigation buttons in `InputState`.
 
 **Demonstration recording.** Bridge `0.3.0` registers a non-consuming
 `IInputConsumer` and streams native `InputState` frames beside observations.
-With F9 off, record and verify a short smoke demonstration:
+The live smoke gate passed with 9,334 input frames, 854 observations, and zero
+sequence gaps. With F9 off, record and verify demonstrations using:
 
 ```powershell
 python python\demo_record.py record runs\demos\smoke.jsonl --recipe smoke

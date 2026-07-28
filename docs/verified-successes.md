@@ -51,7 +51,7 @@ sample count has not been reached.
 | Minimized, unpaused operation | Observation stream and game simulation continued while PlateUp was minimized. | PASS (functional) |
 | Golden trace on current bridge | Bridge `0.2.4` trace promoted to the canonical filename; prior `0.2.0` trace archived. | PASS |
 | Runtime DLL provenance | Bridge `0.2.4` live handshake hash exactly matches the built/deployed DLL. | PASS |
-| Native-input demonstration recorder | Bridge `0.3.0` implementation builds and deploys; live smoke recording remains pending. | PASS (build only) |
+| Native-input demonstration recorder | 9,334 native-input frames aligned with 854 observations; zero sequence gaps; active input player matched the observed player. | PASS (live smoke) |
 
 ---
 
@@ -147,7 +147,7 @@ sample count has not been reached.
 - **Status:** PASS for implementation/build/deployment only.
 - **Limitation:** PlateUp was still running the previous DLL. A full game
   restart and live smoke recording are required before the recorder itself can
-  be marked PASS.
+  be marked PASS. This historical limitation was closed by section 2.4.
 
 ---
 
@@ -222,6 +222,36 @@ The detailed field contract and enum mappings remain in
   canonical file was then verified again.
 - **Status:** PASS. The bridge `0.2.4` trace is the canonical `obs_0.1`
   regression artifact.
+
+### 2.4 Bridge `0.3.0` native-input demonstration smoke
+
+- **Date/time:** 2026-07-28 21:32 AEST
+- **Game:** PlateUp `1.4.3-FF8F`
+- **Bridge:** `0.3.0`
+- **Protocol / schemas:** `1` / `obs_0.1` / `act_0.1` / `demo_0.1`
+- **Runtime mod SHA-256:**
+  `164a7ae4f2c796e3db0d7d8f7622daae49450ad515ef0319e320f214996af8d0`
+- **Artifact:** [smoke.jsonl](../runs/demos/smoke.jsonl)
+- **Artifact size:** 9,006,555 bytes
+- **Artifact SHA-256:**
+  `23C141A83C320564BAEAD8677B9AEC6557708BB62076C78648E2381B737736E1`
+- **Verification command:**
+  `python python/demo_record.py verify runs/demos/smoke.jsonl`
+- **Acceptance gate:** at least 30 native-input frames and two observations;
+  valid schema/provenance and values; F9 override off; movement plus Pressed and
+  Released edges; contiguous sequence from 1; overlapping input/observation
+  ticks; every active input player present in observations.
+- **Observed:** 9,334 native-input frames, 854 observations, 2,200 movement
+  frames, 48 Pressed edges, 48 Released edges, and zero sequence gaps.
+- **Tick ranges:** demo `6766..11432`; observations `6619..11737`.
+- Two local device-source IDs emitted 4,667 frames each. Source `1457758026`
+  produced all movement/button activity and was the sole player ID in
+  observations. Source `-822249859` remained completely neutral.
+- **Result:**
+  `OK -- native input and observations are aligned and gap-free`.
+- **Status:** PASS for the live smoke gate.
+- **Limitation:** this proves capture, alignment, player routing, edges, and
+  transport integrity. It is not yet a recipe demonstration benchmark.
 
 ---
 
@@ -483,12 +513,12 @@ for 5M steps is not approved.
 
 1. Retain the 1x-only motor-fidelity decision unless new evidence supersedes the
    failed 2x/3x gate.
-2. Live-smoke and verify the built `IInputConsumer` demonstration recorder.
-3. Record matched burger and steak demonstrations, then make the initial recipe
+2. Record matched burger and steak demonstrations, then make the initial recipe
    decision from measured complexity and service throughput.
 
-The Phase D measurements and canonical trace are complete. No Gym/environment
-design should be treated as stable until the remaining gates are closed.
+The Phase D measurements, canonical trace, and native-input recorder smoke gate
+are complete. No Gym/environment design should be treated as stable until the
+remaining recipe gate is closed.
 
 ---
 

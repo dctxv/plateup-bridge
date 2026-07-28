@@ -209,6 +209,8 @@ def verify(path):
     pressed_edges = 0
     released_edges = 0
     players = set()
+    active_players = set()
+    observed_players = set()
     last_sequence = None
     min_obs_tick = None
     max_obs_tick = None
@@ -236,6 +238,10 @@ def verify(path):
                 observations += 1
                 if message.get("override"):
                     override_observations += 1
+                for player in message.get("players") or []:
+                    player_id = player.get("id")
+                    if isinstance(player_id, int):
+                        observed_players.add(player_id)
                 tick = message.get("tick")
                 if isinstance(tick, int):
                     min_obs_tick = (
@@ -274,6 +280,7 @@ def verify(path):
                 players.add(message.get("player"))
                 move_x = message.get("move_x")
                 move_y = message.get("move_y")
+                frame_active = False
                 if not (
                     isinstance(move_x, (int, float))
                     and isinstance(move_y, (int, float))
@@ -283,19 +290,27 @@ def verify(path):
                     invalid_numbers += 1
                 elif abs(move_x) > 1e-4 or abs(move_y) > 1e-4:
                     movement_frames += 1
+                    frame_active = True
 
                 for field in BUTTON_FIELDS:
                     value = message.get(field)
                     if value not in BUTTON_STATES:
                         invalid_buttons += 1
-                    elif value == 3:
-                        pressed_edges += 1
-                    elif value == 1:
-                        released_edges += 1
+                    else:
+                        if value != 0:
+                            frame_active = True
+                        if value == 3:
+                            pressed_edges += 1
+                        elif value == 1:
+                            released_edges += 1
 
                 request = message.get("request")
                 if not isinstance(request, int) or not 0 <= request <= 7:
                     invalid_requests += 1
+                elif request != 0:
+                    frame_active = True
+                if frame_active:
+                    active_players.add(message.get("player"))
 
     problems = []
     if manifest is None:
@@ -341,6 +356,13 @@ def verify(path):
         problems.append("no Released button edge")
     if not players or None in players:
         problems.append(f"invalid player identities: {sorted(players)}")
+    if not active_players:
+        problems.append("no active native-input player")
+    unmatched_active = active_players - observed_players
+    if unmatched_active:
+        problems.append(
+            "active input player absent from observations: "
+            f"{sorted(unmatched_active)}")
     if (
         min_obs_tick is not None
         and max_obs_tick is not None
@@ -357,7 +379,9 @@ def verify(path):
     print(f"hello:    bridge={(hello or {}).get('bridge_version')} "
           f"mod={(hello or {}).get('mod_hash')}")
     print(f"frames:   {demo_frames} demo, {observations} obs")
-    print(f"players:  {sorted(players)}")
+    print(f"sources:  {sorted(players)}")
+    print(f"players:  active={sorted(active_players)} "
+          f"observed={sorted(observed_players)}")
     print(f"motion:   {movement_frames} frames")
     print(f"edges:    {pressed_edges} pressed, {released_edges} released")
     print(f"sequence: {sequence_gaps} gaps")

@@ -1,6 +1,6 @@
 # Demonstration schema `demo_0.1`
 
-**Status:** implementation complete; live smoke verification pending  
+**Status:** live smoke verified 2026-07-28
 **Pinned game:** PlateUp `1.4.3-FF8F`  
 **Bridge:** `0.3.0`  
 **Protocol:** `1`  
@@ -113,6 +113,13 @@ Held-item, process, customer, order, and other changes come from interleaved
 `obs` frames. Interaction/goal segmentation is a later derived-data step and
 must preserve the raw file.
 
+The consumer can receive frames from more than one local device source,
+including a neutral device that has not joined the restaurant. A demonstration
+player is considered active when it emits movement, a non-Up button, or a
+non-None request. Active IDs must occur in `obs.players[].id`; neutral unmatched
+sources may remain in the raw file and should be excluded during training
+preprocessing.
+
 ## Commands
 
 ```powershell
@@ -124,13 +131,15 @@ The verifier requires valid provenance/schema frames, at least two
 observations, at least 30 native input frames, an enabled status, no sequence
 gaps, sequence numbering from 1, valid movement/button/request values, movement,
 Pressed and Released edges, F9 override off throughout, and overlapping
-demonstration/observation tick ranges.
+demonstration/observation tick ranges. It also requires every active native
+input player to be present in the observation stream.
 
 ## Known limitations
 
 - Raw device input is unavailable to `IInputConsumer` while PlateUp is
   unfocused.
-- The initial implementation has not yet been smoke-tested in the live game.
+- The live smoke passed, but matched recipe demonstrations have not yet been
+  benchmarked.
 - Direct entity-interaction labels are not separate events yet. They will be
   derived by aligning input edges with observation changes and validated before
   recipe demonstrations are accepted.
