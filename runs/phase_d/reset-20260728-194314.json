@@ -1,0 +1,57 @@
+{
+  "kind": "phase_d_reset",
+  "recorded_at": "2026-07-28T19:43:14+1000",
+  "manifest": {
+    "kind": "hello",
+    "protocol": 1,
+    "bridge_version": "0.2.3",
+    "obs_schema": "obs_0.1",
+    "act_schema": "act_0.1",
+    "session_id": "b331ef1f272d45dfbcf5871b8a8f1945",
+    "game_version": "1.4.3-FF8F",
+    "mod_hash": "unknown",
+    "unity": "2020.3.48f1"
+  },
+  "attempts": 20,
+  "successes": 20,
+  "failures": [],
+  "success_rate": 1.0,
+  "durations_seconds": [
+    2.875,
+    2.889999999999418,
+    2.8440000000009604,
+    2.938000000001921,
+    2.702999999997701,
+    2.875,
+    2.7030000000013388,
+    2.8590000000003783,
+    2.875,
+    3.0,
+    2.9840000000003783,
+    2.9690000000009604,
+    3.0309999999990396,
+    2.952999999997701,
+    3.047000000002299,
+    3.1569999999992433,
+    3.0,
+    3.1709999999984575,
+    2.2820000000028813,
+    3.014999999999418
+  ],
+  "median_seconds": 2.945499999999811,
+  "p90_seconds": 3.047000000002299,
+  "p99_seconds": 3.1709999999984575,
+  "throughput": {
+    "day_game_seconds": 100.0,
+    "control_hz": 10.0,
+    "steps_per_episode": 1000.0,
+    "episodes_per_hour_1x": 34.969959833115645,
+    "hours_for_5m_steps_1x": 142.97986111111084,
+    "episodes_per_hour_3x_if_approved": 99.23141593123681,
+    "hours_for_5m_steps_3x_if_approved": 50.38726851851826
+  },
+  "gate": {
+    "minimum_success_rate": 0.99,
+    "passed": true
+  }
+}

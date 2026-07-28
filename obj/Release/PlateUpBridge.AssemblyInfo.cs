@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PlateUpBridge")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1e5332cc0362588a9b2d921d8a74bc08e9e94094")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+32a639b0e1d620deeebd0f8950afe1a153f399b1")]
 [assembly: System.Reflection.AssemblyProductAttribute("PlateUpBridge")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PlateUpBridge")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

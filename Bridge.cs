@@ -61,7 +61,8 @@ namespace PlateUpBridge
         public const int ProtocolVersion = 1;
         public const string ObsSchema = "obs_0.1";
         public const string ActSchema = "act_0.1";
-        public const string BridgeVersion = "0.2.1";
+        public const string DemoSchema = "demo_0.1";
+        public const string BridgeVersion = "0.3.0";
         public const int MaxOutboundBacklog = 64;
 
         const uint PipeAccessDuplex = 0x00000003;
@@ -132,6 +133,9 @@ namespace PlateUpBridge
         public static long CommandsApplied;
         public static long CommandsDropped;
         public static volatile bool ResetCommandReceipts;
+        public static volatile bool ResetInjectedInput;
+        public static volatile bool DemoRecording;
+        public static long DemoSequence;
 
         // Run provenance. SessionId is new for every game launch.
         public static readonly string SessionId = Guid.NewGuid().ToString("N");
@@ -166,6 +170,8 @@ namespace PlateUpBridge
         {
             _running = false;
             Connected = false;
+            DemoRecording = false;
+            ResetInjectedInput = true;
         }
 
         public static void Send(string json)
@@ -186,6 +192,7 @@ namespace PlateUpBridge
                  + ",\"bridge_version\":\"" + BridgeVersion + "\""
                  + ",\"obs_schema\":\"" + ObsSchema + "\""
                  + ",\"act_schema\":\"" + ActSchema + "\""
+                 + ",\"demo_schema\":\"" + DemoSchema + "\""
                  + ",\"session_id\":\"" + SessionId + "\""
                  + ",\"game_version\":\"" + GameVersion + "\""
                  + ",\"mod_hash\":\"" + ModHash + "\""
@@ -197,21 +204,70 @@ namespace PlateUpBridge
         {
             try
             {
-                var path = typeof(Bridge).Assembly.Location;
-                if (string.IsNullOrEmpty(path) || !File.Exists(path)) return "unknown";
+                var path = ResolveModAssemblyPath();
+                if (string.IsNullOrEmpty(path))
+                {
+                    Debug.LogWarning("[BRIDGE] could not resolve mod DLL path for hashing");
+                    return "unknown";
+                }
                 using (var sha = SHA256.Create())
                 using (var stream = File.OpenRead(path))
                 {
                     return BitConverter.ToString(sha.ComputeHash(stream))
                         .Replace("-", "")
-                        .Substring(0, 16)
                         .ToLowerInvariant();
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.LogWarning("[BRIDGE] mod hash failed: " + ex.Message);
                 return "unknown";
             }
+        }
+
+        static string ResolveModAssemblyPath()
+        {
+            try
+            {
+                var location = typeof(Bridge).Assembly.Location;
+                if (!string.IsNullOrEmpty(location) && File.Exists(location))
+                    return Path.GetFullPath(location);
+            }
+            catch { }
+
+            try
+            {
+                var codeBase = typeof(Bridge).Assembly.CodeBase;
+                if (!string.IsNullOrEmpty(codeBase))
+                {
+                    var location = new Uri(codeBase).LocalPath;
+                    if (File.Exists(location)) return Path.GetFullPath(location);
+                }
+            }
+            catch { }
+
+            try
+            {
+                var gameDirectory = Path.GetDirectoryName(Application.dataPath);
+                if (!string.IsNullOrEmpty(gameDirectory))
+                {
+                    var deployed = Path.Combine(
+                        gameDirectory, "Mods", "PlateUpBridge", "PlateUpBridge.dll");
+                    if (File.Exists(deployed)) return Path.GetFullPath(deployed);
+                }
+            }
+            catch { }
+
+            try
+            {
+                var deployed = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "Mods", "PlateUpBridge", "PlateUpBridge.dll");
+                if (File.Exists(deployed)) return Path.GetFullPath(deployed);
+            }
+            catch { }
+
+            return null;
         }
 
         static void AcceptLoop()
@@ -243,6 +299,10 @@ namespace PlateUpBridge
                 {
                     if (Connected) Debug.Log("[BRIDGE] client disconnected");
                     Connected = false;
+                    DemoRecording = false;
+                    // InputState is a multi-field struct owned by Unity's main
+                    // thread. Signal that thread instead of mutating it here.
+                    ResetInjectedInput = true;
                 }
 
                 Thread.Sleep(200);

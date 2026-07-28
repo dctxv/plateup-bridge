@@ -2,9 +2,9 @@
 
 **Status:** frozen  
 **Pinned build:** PlateUp 1.4.3-FF8F, Unity 2020.3.48f1, Steam public stable  
-**Bridge:** 0.2.1  
+**Bridge:** 0.3.0
 **Transport:** newline-delimited JSON over `\\.\pipe\plateup_bridge`  
-**Rate:** every 5th simulation tick, approximately 12 Hz
+**Rate:** every 6th simulation tick, approximately 10 Hz
 
 Any change to a field's name, type, units, or meaning requires a new schema
 version. Additive optional fields do not.
@@ -33,9 +33,10 @@ legality. Learning what may be placed where is part of the task.
 | `bridge_version` | string | Mod semantic version. |
 | `obs_schema` | string | `"obs_0.1"`. |
 | `act_schema` | string | `"act_0.1"`. |
+| `demo_schema` | string | `"demo_0.1"`; native-input demonstration frames. |
 | `session_id` | string | New GUID per game launch. |
 | `game_version` | string | `Application.version`. |
-| `mod_hash` | string | First 16 hexadecimal characters of the mod DLL's SHA-256. |
+| `mod_hash` | string | Full lowercase hexadecimal SHA-256 of the loaded/deployed mod DLL. |
 | `unity` | string | `Application.unityVersion`. |
 
 The client validates `protocol`, `obs_schema`, and `act_schema` and refuses to
@@ -80,7 +81,7 @@ held-down states; the mod derives `Pressed`, `Held`, and `Released` edges.
 | `CommandId` | automatic | int | Connection-local monotonically increasing receipt ID. |
 | `MoveX` | `move[0]` | float | World-space x movement and aim. |
 | `MoveY` | `move[1]` | float | World-space z movement and aim. |
-| `Grab` | `grab` | bool | Grab/drop held state. |
+| `Grab` | `grab` | bool | Grab/place held state; placement remains contextual. |
 | `Interact` | `interact` | bool | Act/chop/wash held state. |
 | `Secondary1` | `secondary1` | bool | Secondary action 1; empirical role still under test. |
 | `Secondary2` | `secondary2` | bool | Notify interaction. |
@@ -136,12 +137,17 @@ Fields carrying an entity ID are `e`, `table`, `group`, and the members of
 | `protocol` | int | | Currently `1`. |
 | `tick` | int | bridge | Monotonic; increments every simulation tick. |
 | `in_restaurant` | bool | `SLayout` singleton exists | False in HQ and menus. |
+| `practice_mode` | bool | `SPracticeMode` singleton exists | True only inside an active Practice session. |
 | `paused` | bool | `Time.IsPaused` | |
 | `override` | bool | bridge | True when bridge input override is enabled. |
 | `input_captured` | bool | `CCaptureInput` without `CCapturePassthrough` | A menu owns input. |
 | `ack_command` | int | bridge | Most recent `CommandId` accepted by the input system. |
 | `cmds_applied` | int | bridge | Commands selected for application since this pipe connection began. |
 | `cmds_dropped` | int | bridge | Commands superseded by a newer command in the same simulation tick. |
+| `outbound_frames_dropped` | int | bridge | Frames discarded because the outbound pipe queue exceeded its backpressure limit; cumulative for the game process. |
+| `game_speed` | float | `SGameTime.GameSpeed` | Debug/measurement multiplier; normally `1`. |
+| `game_total_time` | float | `SGameTime.TotalTime` | Scaled game clock; continues in Practice even though `seconds_elapsed` does not. |
+| `real_total_time` | float | `SGameTime.RealTotalTime` | Unscaled game-process clock. |
 | `day` | int | `SDay.Day` | Increments at service start; preparation carries the previous day's number. |
 | `time_of_day` | float | `STime.TimeOfDay` | |
 | `time_unbounded` | float | `STime.TimeOfDayUnbounded` | Arrival bar; ≥1 means no new arrivals, not that the day ended. |
@@ -157,17 +163,18 @@ Fields carrying an entity ID are `e`, `table`, `group`, and the members of
 present. Phase detection requires combining fields: `day` alone cannot
 distinguish preparation from service.
 
-The three command-receipt fields are additive diagnostics. They reset on every
-pipe connection. Clients send monotonically increasing `CommandId` values
-starting at 1, and can calculate pending work as:
+The three command-receipt fields (`ack_command`, `cmds_applied`, and
+`cmds_dropped`) reset on every pipe connection. Clients send monotonically
+increasing `CommandId` values starting at 1, and can calculate pending work as:
 
 ```text
 unacked = max(0, last_sent_command_id - ack_command)
 ```
 
 `cmds_dropped` counts valid commands drained from the inbound queue but
-superseded before the Unity tick applied one. It does not count malformed JSON
-or outbound observation frames dropped because a client stopped reading.
+superseded before the Unity tick applied one. It does not count malformed JSON.
+`outbound_frames_dropped` separately reports observation or dictionary frames
+discarded because a client stopped reading quickly enough.
 
 ### `start_day_warnings`
 
@@ -538,7 +545,13 @@ runs/golden/obs_0.1_day1.jsonl
 ```
 
 It contains a full hand-played day with `manifest` and `hello` records at the
-top. Replay it through:
+top. The canonical trace was recorded with bridge `0.2.4`, session
+`cf908a54f962475f8188e9ddd5b3f4b7`, and trace SHA-256
+`5CB703978261E4178A0BA3FAE4E4D2C881819DA6AA30857E49D89424FCA74539`.
+The prior bridge `0.2.0` trace is retained under
+`runs/golden/archive/obs_0.1_day1_bridge020_20260728.jsonl`.
+
+Replay the canonical trace through:
 
 ```powershell
 python python\record.py --verify runs\golden\obs_0.1_day1.jsonl

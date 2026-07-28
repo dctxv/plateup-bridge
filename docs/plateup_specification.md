@@ -26,7 +26,7 @@ The decisive changes are:
 4. **Do not emit per-tick action affordances.** The bridge exposes factual state - positions, contents, filters, process state, capacity, timers, and phase - but does not provide a legality oracle.
 5. **Use Practice mode as the primary training harness.** Reset wall-clock time and time-scale fidelity are first-class architecture measurements.
 6. **Auto-label demonstrations from interaction events.** The next entity interacted with supplies the goal label for the preceding movement segment.
-7. **Replace 8-way movement with per-axis control.** The baseline is 5 x 5 discretised axes, with a small continuous alternative retained for comparison. Throw/drop behaviour must be represented and verified.
+7. **Replace 8-way movement with per-axis control.** The baseline is 5 x 5 discretised axes, with a small continuous alternative retained for comparison. Grab/place behaviour is contextual: PlateUp has no free floor-drop or toss action.
 8. **Make determinism a Phase A decision.** Deterministic replay is either supported for the pinned build and scenario, or it is explicitly replaced by seeded statistical regression.
 9. **Sequence the programme into separate publishable projects.** Autonomous Day 1 on a chosen layout is Project 1 and a valid video result. Layout generalisation and preparation are Project 2. Research, automation, menu generalisation, and headquarters autonomy are later projects.
 10. **Apply wall-clock stop rules.** Exceeding a curriculum budget triggers a method review, not indefinite additional training.
@@ -130,7 +130,7 @@ Any game, bridge, dependency, or schema change invalidates the previous integrat
 During an active scored episode:
 
 - every movement axis value comes from a learned policy;
-- every Grab, Interact/Act, Ready/Start, and supported throw/drop gesture comes from the agent;
+- every Grab/place, Interact/Act, and Ready/Start action comes from the agent;
 - every service task choice comes from the agent;
 - every layout, preparation, purchase, card, research, reroll, storage, and discard decision in scope comes from the agent;
 - no human rescues the restaurant; and
@@ -517,12 +517,13 @@ grab in {up, down/held}
 interact in {up, down/held}
 ready in {up, down/held}
 stand_still in {up, down/held}, if the build/input path supports it
-throw_or_drop gesture, represented using the verified InputState semantics
 ```
 
 This is a 25-way movement grid before buttons. A small continuous `[-1, 1]^2` movement head is the comparison baseline. The choice is made by precision, stability, and visual quality in counter-approach tests, not by preference.
 
-Do not model throwing as an invented key if the game implements it as a timed or contextual Grab gesture. The bridge action schema should describe intent, while the verified adapter maps that intent to the actual `InputState` sequence.
+There is no separate throw/drop primitive. Grab is contextual: it can pick up,
+place, store, combine, or trash an item only when the faced target permits that
+outcome. Facing empty floor does not release the held item.
 
 ## 7.2 Control frequency
 
@@ -825,7 +826,7 @@ Each stage has a pass gate and a budget. The budget is cumulative elapsed traini
 | C1 | Input transport and release | 2 engineering days | 100,000-command soak; zero sticky inputs; correct player routing |
 | C2 | Counter approach and facing | 12 real-game training hours | >=98% target-pose arrival; <=2% overshoot failures |
 | C3 | Grab/place/interact | 18 real-game training hours | >=95% first-or-second-attempt success on held-out starts |
-| C4 | Throw/drop gesture | 6 real-game training hours | >=95% intended outcome; no accidental destructive use |
+| C4 | Contextual placement and disposal | 6 real-game training hours | >=95% intended outcome; no accidental trashing |
 | D1 | Practice reset automation | 3 engineering days | 500 resets; >=99% success; reset-time distribution recorded |
 | D2 | Time-scale fidelity | 2 engineering days | approved scale preserves motor success within 2 percentage points |
 | E | Environment and logging | 3 engineering days | API checks, random-action soak, reproducible episode records |
@@ -994,7 +995,7 @@ Maintain fixed scenario suites for:
 - counter approach;
 - Grab and place;
 - Interact/Act;
-- throw/drop;
+- contextual placement/storage/trashing;
 - one meal;
 - one customer;
 - dish wash/reuse;
@@ -1104,13 +1105,15 @@ Use precise claim language:
 
 **Known:** `IInputConsumer` and `LocalInputSourceConsumers.Consumers` provide a credible injection/recording route.
 
-**Not yet proven by the supplied evidence:** reliable autonomous movement, Grab, Interact/Act, Ready, throw/drop semantics, and clean release across timeouts and phase transitions.
+**Not yet proven by the supplied evidence:** reliable autonomous movement,
+Grab/place, Interact/Act, Ready, and clean input release across timeouts and
+phase transitions.
 
 **Gate:**
 
 - per-axis movement is controllable;
 - button edge/hold/release behaviour is correct;
-- throw/drop behaviour is mapped to real input semantics;
+- contextual placement/storage/trashing is mapped to real input semantics;
 - control targets the correct player;
 - acknowledgement and input echo work;
 - disconnect/expiry releases inputs;
@@ -1206,7 +1209,7 @@ Each phase receives a separate experiment contract and evaluation category.
 2. prove one-axis and diagonal movement;
 3. prove Grab and Interact down/up edges;
 4. prove Ready/Start;
-5. identify and prove throw/drop semantics;
+5. prove contextual placement, storage, combination, and trash semantics;
 6. add command expiry and forced release;
 7. measure candidate control rates;
 8. run the input soak test;
@@ -1420,7 +1423,7 @@ Run in a controlled Practice scenario:
 6. press and release Interact/Act;
 7. press and release Ready;
 8. perform movement plus interaction;
-9. verify throw/drop intent mapping;
+9. verify contextual placement/storage/trashing intent mapping;
 10. expire a command while every button is held;
 11. disconnect while moving;
 12. pause and change phase while moving;

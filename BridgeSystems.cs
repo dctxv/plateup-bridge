@@ -8,6 +8,12 @@ using UnityEngine;
 
 namespace PlateUpBridge
 {
+    public class BridgeControlFrame
+    {
+        public string Kind;
+        public bool Enabled;
+    }
+
     /// <summary>
     /// Drives the player. Runs once per sim tick, immediately before PlayerManager,
     /// which is where Player.Update() -> InputQueue.ApplyUpdates() -> UpdateToEntity()
@@ -49,8 +55,9 @@ namespace PlateUpBridge
             Bridge.AppliedActionTick = -1;
             Bridge.InputQueueDepth = 0;
             BridgePatcher.ApplyOnce();
+            BridgeDemoRecorder.Register();
             Bridge.Start();
-            Debug.Log("[BRIDGE] input system online. F9 override, F10 grab, F11 interact, F12 ready, arrows move");
+            Debug.Log("[BRIDGE] input system online. F5/F6/F7 speed 1x/2x/3x, F8 ready, F9 override, F10 grab, F11 interact, arrows move");
         }
 
         protected override void OnUpdate()
@@ -58,13 +65,27 @@ namespace PlateUpBridge
             Bridge.Tick++;
             HandleDebugKeys();
 
+            if (Bridge.ResetInjectedInput)
+            {
+                _action = NeutralAction;
+                _previous = InputState.Neutral;
+                _previousRequest = GameStateRequest.None;
+                Bridge.Injected = InputState.Neutral;
+                Bridge.ResetInjectedInput = false;
+            }
+
             if (Bridge.ResetCommandReceipts)
             {
                 _action = NeutralAction;
+                _previous = InputState.Neutral;
+                _previousRequest = GameStateRequest.None;
+                Bridge.Injected = InputState.Neutral;
                 Bridge.LastActionTick = Bridge.Tick;
                 Bridge.LastCommandId = 0;
                 Bridge.CommandsApplied = 0;
                 Bridge.CommandsDropped = 0;
+                Bridge.DemoRecording = false;
+                Bridge.DemoSequence = 0;
                 Bridge.ResetCommandReceipts = false;
             }
 
@@ -75,6 +96,26 @@ namespace PlateUpBridge
             {
                 try
                 {
+                    var control = JsonConvert.DeserializeObject<BridgeControlFrame>(line);
+                    if (control != null &&
+                        string.Equals(
+                            control.Kind, "demo_control",
+                            System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        bool enabled = control.Enabled && Bridge.Connected;
+                        if (enabled && !Bridge.DemoRecording)
+                            Bridge.DemoSequence = 0;
+                        Bridge.DemoRecording = enabled;
+                        Bridge.Send(
+                            "{\"kind\":\"demo_status\",\"demo_schema\":\""
+                            + Bridge.DemoSchema
+                            + "\",\"enabled\":"
+                            + (enabled ? "true" : "false")
+                            + ",\"tick\":" + Bridge.Tick + "}");
+                        Debug.Log("[BRIDGE] demo recording=" + enabled);
+                        continue;
+                    }
+
                     var a = JsonConvert.DeserializeObject<BridgeAction>(line);
                     if (a == null) continue;
                     if (received) Bridge.CommandsDropped++;
@@ -213,6 +254,9 @@ namespace PlateUpBridge
             _manualGrab = Input.GetKey(KeyCode.F10);
             _manualInteract = Input.GetKey(KeyCode.F11);
             _manualReady = Input.GetKey(KeyCode.F8);
+            if (Input.GetKeyDown(KeyCode.F5)) SetGameSpeed(1f);
+            if (Input.GetKeyDown(KeyCode.F6)) SetGameSpeed(2f);
+            if (Input.GetKeyDown(KeyCode.F7)) SetGameSpeed(3f);
 
             float x = 0f, y = 0f;
             if (Input.GetKey(KeyCode.RightArrow)) x += 1f;
@@ -220,6 +264,15 @@ namespace PlateUpBridge
             if (Input.GetKey(KeyCode.UpArrow)) y += 1f;
             if (Input.GetKey(KeyCode.DownArrow)) y -= 1f;
             _manualMove = new Vector2(x, y);
+        }
+
+        void SetGameSpeed(float speed)
+        {
+            SGameTime gameTime;
+            if (!TryGetSingleton(out gameTime)) return;
+            gameTime.GameSpeed = speed;
+            SetSingleton(gameTime);
+            Debug.Log("[BRIDGE] game speed=" + speed + "x");
         }
     }
 

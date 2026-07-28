@@ -150,6 +150,7 @@ class PlateUpBridge:
             "protocol": h.get("protocol"),
             "obs_schema": h.get("obs_schema"),
             "act_schema": h.get("act_schema"),
+            "demo_schema": h.get("demo_schema"),
             "connected_at": time.time(),
         }
 
@@ -208,6 +209,15 @@ class PlateUpBridge:
 
     def idle(self):
         return self.send()
+
+    def set_demo_recording(self, enabled):
+        """Enable/disable native IInputConsumer frames for this connection."""
+        frame = {
+            "kind": "demo_control",
+            "enabled": bool(enabled),
+        }
+        win32file.WriteFile(
+            self._h, (json.dumps(frame) + "\n").encode("utf-8"))
 
 
 # ---- helpers --------------------------------------------------------

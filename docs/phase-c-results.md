@@ -99,6 +99,6 @@ Receipts / echo	✅ built
 Expiry + release	✅ 0.33s, 1.55u
 Hard disconnect	✅ 0.000u
 Phase transitions	⚠️ inconclusive — pause uses Time.IsPaused, not capture
-Throw/drop	✅ identified as non-existent
+Free throw/drop	✅ identified as non-existent; Grab only places/stores/combines/trashes contextually
 Frequency	✅ 10 Hz, channel not limiting
 Soak	✅ 24k clean; re-run for the full 100k

@@ -31,7 +31,7 @@ namespace PlateUpBridge
     {
         EntityQuery PlayerQ, ApplianceQ, LooseItemQ, GroupQ, CustomerQ, CaptureQ;
 
-        const int PublishEvery = 5;   // sim ~60Hz -> ~12Hz, matching motor_decision_hz
+        const int PublishEvery = 6;   // sim ~60Hz -> ~10Hz, matching motor_decision_hz
         int _frame;
         bool _dictSent;
         readonly StringBuilder _observation = new StringBuilder(4096);
@@ -96,12 +96,23 @@ namespace PlateUpBridge
         void AppendGlobals(StringBuilder sb)
         {
             sb.Append(",\"in_restaurant\":").Append(B(HasSingleton<SLayout>()));
+            sb.Append(",\"practice_mode\":").Append(B(HasSingleton<SPracticeMode>()));
             sb.Append(",\"paused\":").Append(B(base.Time.IsPaused));
             sb.Append(",\"override\":").Append(B(Bridge.Override));
             sb.Append(",\"input_captured\":").Append(B(!CaptureQ.IsEmpty));
             sb.Append(",\"ack_command\":").Append(Bridge.LastCommandId);
             sb.Append(",\"cmds_applied\":").Append(Bridge.CommandsApplied);
             sb.Append(",\"cmds_dropped\":").Append(Bridge.CommandsDropped);
+            sb.Append(",\"outbound_frames_dropped\":")
+                .Append(Bridge.DroppedOutboundFrames);
+
+            SGameTime gameTime;
+            if (TryGetSingleton(out gameTime))
+            {
+                sb.Append(",\"game_speed\":").Append(F(gameTime.GameSpeed));
+                sb.Append(",\"game_total_time\":").Append(F(gameTime.TotalTime));
+                sb.Append(",\"real_total_time\":").Append(F(gameTime.RealTotalTime));
+            }
 
             SDay day;
             if (TryGetSingleton(out day)) sb.Append(",\"day\":").Append(day.Day);
@@ -498,13 +509,35 @@ namespace PlateUpBridge
 
         static string F(float v)
         {
+            if (float.IsNaN(v) || float.IsInfinity(v)) return "0";
             return v.ToString("0.###", CultureInfo.InvariantCulture);
         }
 
         static string Esc(string s)
         {
             if (string.IsNullOrEmpty(s)) return "";
-            return s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            var escaped = new StringBuilder(s.Length + 8);
+            foreach (char c in s)
+            {
+                switch (c)
+                {
+                    case '"': escaped.Append("\\\""); break;
+                    case '\\': escaped.Append("\\\\"); break;
+                    case '\b': escaped.Append("\\b"); break;
+                    case '\f': escaped.Append("\\f"); break;
+                    case '\n': escaped.Append("\\n"); break;
+                    case '\r': escaped.Append("\\r"); break;
+                    case '\t': escaped.Append("\\t"); break;
+                    default:
+                        if (c < 0x20)
+                            escaped.Append("\\u").Append(
+                                ((int)c).ToString("x4", CultureInfo.InvariantCulture));
+                        else
+                            escaped.Append(c);
+                        break;
+                }
+            }
+            return escaped.ToString();
         }
     }
 }

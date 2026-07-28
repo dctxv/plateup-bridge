@@ -1,0 +1,40 @@
+{
+  "kind": "phase_d_reset",
+  "recorded_at": "2026-07-28T19:41:57+1000",
+  "manifest": {
+    "kind": "hello",
+    "protocol": 1,
+    "bridge_version": "0.2.3",
+    "obs_schema": "obs_0.1",
+    "act_schema": "act_0.1",
+    "session_id": "b331ef1f272d45dfbcf5871b8a8f1945",
+    "game_version": "1.4.3-FF8F",
+    "mod_hash": "unknown",
+    "unity": "2020.3.48f1"
+  },
+  "attempts": 3,
+  "successes": 3,
+  "failures": [],
+  "success_rate": 1.0,
+  "durations_seconds": [
+    2.875,
+    2.827999999997701,
+    2.875
+  ],
+  "median_seconds": 2.875,
+  "p90_seconds": 2.875,
+  "p99_seconds": 2.875,
+  "throughput": {
+    "day_game_seconds": 100.0,
+    "control_hz": 10.0,
+    "steps_per_episode": 1000.0,
+    "episodes_per_hour_1x": 34.993924665856625,
+    "hours_for_5m_steps_1x": 142.88194444444443,
+    "episodes_per_hour_3x_if_approved": 99.42462600690448,
+    "hours_for_5m_steps_3x_if_approved": 50.289351851851855
+  },
+  "gate": {
+    "minimum_success_rate": 0.99,
+    "passed": true
+  }
+}

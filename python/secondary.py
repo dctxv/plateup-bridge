@@ -54,7 +54,7 @@ def item_name(item):
 
 
 def snapshot(observation):
-    """Fields that a throw, drop, ping, or stop action could plausibly change."""
+    """Fields that a contextual place, ping, or stop action could change."""
     p = player(observation)
     held = p.get("held") if p else None
     loose = observation.get("loose_items", [])
@@ -188,11 +188,11 @@ Interpretation notes:
 
 - SecondaryAction1 is confirmed as Ready/Start consent during preparation. A
   lack of change on open floor means only that no active view consumes it there.
-- If a held item disappears and appears in loose_items, that is a throw.
-- If a held item disappears with no loose item, it entered a holder or was
-  destroyed; inspect nearby appliance contents in the raw observation.
-- Throwing may be a Grab gesture while facing empty floor rather than a
-  dedicated button. The final trial tests that.
+- PlateUp has no free floor-drop or toss action. If a held item disappears, it
+  was placed, stored, combined, or trashed through a legal contextual target;
+  inspect nearby appliance contents in the raw observation.
+- A Grab press while facing empty floor should leave the carried item held. The
+  final trial verifies that negative case.
 - SecondaryAction2 maps to InteractionType.Notify in AttemptInteraction, which
   is probably ping. Expect no persistent state change in solo.
 """)

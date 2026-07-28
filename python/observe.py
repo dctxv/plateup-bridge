@@ -3,7 +3,7 @@ Observation layer for the PlateUp bridge. Schema obs_0.1.
 
 The mod emits two message kinds:
     dict  -- id -> name maps, once per connection
-    obs   -- game state, ~12 Hz
+    obs   -- game state, ~10 Hz
 
 This resolves ids to names and gives you a World object convenient to poke at from
 a REPL. It deliberately does NOT build tensors -- do that in a separate encoder so
@@ -60,6 +60,10 @@ class World:
         self.ack_command = 0
         self.cmds_applied = 0
         self.cmds_dropped = 0
+        self.outbound_frames_dropped = 0
+        self.game_speed = 1.0
+        self.game_total_time = 0.0
+        self.real_total_time = 0.0
         self.day = 0
         self.seconds_elapsed = 0.0
         self.day_length = 0.0
@@ -70,6 +74,7 @@ class World:
         self.loss_reason = None
         self.start_day_warnings = None
         self.in_restaurant = False
+        self.practice_mode = False
         self.paused = False
         self.override = False
         self.input_captured = False
@@ -207,6 +212,10 @@ class ObservationClient:
         w.ack_command = m.get("ack_command", 0)
         w.cmds_applied = m.get("cmds_applied", 0)
         w.cmds_dropped = m.get("cmds_dropped", 0)
+        w.outbound_frames_dropped = m.get("outbound_frames_dropped", 0)
+        w.game_speed = m.get("game_speed", 1.0)
+        w.game_total_time = m.get("game_total_time", 0.0)
+        w.real_total_time = m.get("real_total_time", 0.0)
         w.day = m.get("day", 0)
         w.time_of_day = m.get("time_of_day", 0.0)
         w.seconds_elapsed = m.get("seconds_elapsed", 0.0)
@@ -217,6 +226,7 @@ class ObservationClient:
         w.loss_reason = m.get("loss_reason")
         w.start_day_warnings = m.get("start_day_warnings")
         w.in_restaurant = m.get("in_restaurant", False)
+        w.practice_mode = m.get("practice_mode", False)
         w.paused = m.get("paused", False)
         w.override = m.get("override", False)
         w.input_captured = m.get("input_captured", False)
@@ -360,6 +370,57 @@ def orders_only():
                 last = out
 
 
+def stream_rate():
+    """Print wall-clock observation throughput; useful for pause/stall checks."""
+    import queue
+    import threading
+
+    samples = queue.Queue()
+
+    def read_loop():
+        try:
+            with ObservationClient() as c:
+                while True:
+                    w = c.step()
+                    samples.put((
+                        "obs", time.monotonic(), w.tick, w.paused,
+                        w.outbound_frames_dropped))
+        except Exception as exc:
+            samples.put(("error", exc))
+
+    threading.Thread(target=read_loop, daemon=True).start()
+    print("Waiting for observations. Pause PlateUp for 30 seconds.")
+
+    last_seen = None
+    last_tick = None
+    try:
+        while True:
+            time.sleep(1.0)
+            count = 0
+            paused = None
+            dropped = None
+            while True:
+                try:
+                    sample = samples.get_nowait()
+                except queue.Empty:
+                    break
+                if sample[0] == "error":
+                    raise sample[1]
+                _, last_seen, last_tick, paused, dropped = sample
+                count += 1
+
+            age = (
+                time.monotonic() - last_seen
+                if last_seen is not None
+                else float("inf"))
+            status = "OK" if age < 2.0 else "STALL"
+            print(
+                f"{count:2d} obs/s | {status} | tick={last_tick} "
+                f"paused={paused} outbound_dropped={dropped}")
+    except KeyboardInterrupt:
+        pass
+
+
 if __name__ == "__main__":
     import sys
     mode = sys.argv[1] if len(sys.argv) > 1 else "watch"
@@ -367,5 +428,7 @@ if __name__ == "__main__":
         dump_once()
     elif mode == "orders":
         orders_only()
+    elif mode == "rate":
+        stream_rate()
     else:
         watch()

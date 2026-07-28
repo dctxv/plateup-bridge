@@ -2,6 +2,10 @@
 
 Programmatic control of a PlateUp chef from Python. Movement, interaction, and game-state requests, over a named pipe.
 
+Verified integration and acceptance results are maintained in
+[`docs/verified-successes.md`](docs/verified-successes.md). Successful tests
+must be added there with their evidence; failed gates are retained separately.
+
 ## Build
 
 ```powershell
@@ -32,10 +36,11 @@ Get-Content "$env:USERPROFILE\AppData\LocalLow\It's Happening\PlateUp\Player.log
 | Key | Action |
 | --- | --- |
 | F9 | Toggle override — your keyboard is ignored while on |
+| F5 / F6 / F7 | Measurement game speed: 1x / 2x / 3x |
 | Arrows | Move |
 | F10 | Grab (hold) |
 | F11 | Interact (hold) |
-| F12 | Ready/Start (hold) |
+| F8 | Ready/Start (hold) |
 
 ## Observation verification
 
@@ -47,13 +52,23 @@ python python/observe.py
 
 Compare the summary with the game:
 
-- The held item should change when you pick up or drop something.
+- The held item should change when you pick something up, place/store it in a
+  legal holder, or dispose of it through a valid trash interaction.
 - Cooking and chopping progress should increase.
 - Burned food should show `!BAD`.
 - Patience should fall while customers wait.
 - Group and customer counts should match what is visible.
 
 Use `python python/observe.py dump` to print one full observation.
+
+To verify that observations continue while the game is paused:
+
+```powershell
+python python/observe.py rate
+```
+
+Pause PlateUp for 30 seconds. The expected result is continued `~10 obs/s`,
+`paused=True`, and `OK`; `0 obs/s | STALL` means the simulation group stopped.
 
 The observer deliberately does not publish `CScheduledCustomer`. Its future
 arrival times and group sizes are hidden information under the experiment
@@ -65,20 +80,21 @@ Python so they can change without rebuilding the mod.
 The first frame is a schema/provenance handshake:
 
 ```json
-{"kind":"hello","protocol":1,"bridge_version":"0.2.1",
- "obs_schema":"obs_0.1","act_schema":"act_0.1",
+{"kind":"hello","protocol":1,"bridge_version":"0.3.0",
+ "obs_schema":"obs_0.1","act_schema":"act_0.1","demo_schema":"demo_0.1",
  "session_id":"...","game_version":"1.4.3-FF8F",
- "mod_hash":"0123456789abcdef","unity":"2020.3.48f1"}
+ "mod_hash":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+ "unity":"2020.3.48f1"}
 ```
 
 It is followed by one `dict` frame containing appliance, item, and process name
-maps. Observations then arrive at approximately 12 Hz:
+maps. Observations then arrive at approximately 10 Hz:
 
 ```json
 {"kind":"obs","protocol":1,"tick":8412,
  "in_restaurant":true,"paused":false,"override":true,
  "input_captured":false,"ack_command":417,
- "cmds_applied":412,"cmds_dropped":5,
+ "cmds_applied":412,"cmds_dropped":5,"outbound_frames_dropped":0,
  "day":1,"seconds_elapsed":42.5,
  "day_length":180.0,"money":25,"game_over":false,
  "players":[{"id":1,"x":1.1,"z":-1.5,"rot":90.0,"held":null,"captured":false}],
@@ -185,13 +201,50 @@ the menu navigation buttons in `InputState`.
 
 `CCaptureInput` / `CCapturePassthrough` mark input as owned by a menu; `AttemptInteraction` early-returns and sets `IsCaptured`. Free phase detection — query it rather than inferring from screen state.
 
-**Demonstration recording, built in.** `IInputConsumer` + `LocalInputSourceConsumers.Consumers` is a registerable interception chain whose `TakeInput(player_id, state)` sees every input before the game does. Use that for the demo recorder rather than writing one.
+**Demonstration recording.** Bridge `0.3.0` registers a non-consuming
+`IInputConsumer` and streams native `InputState` frames beside observations.
+With F9 off, record and verify a short smoke demonstration:
+
+```powershell
+python python\demo_record.py record runs\demos\smoke.jsonl --recipe smoke
+python python\demo_record.py verify runs\demos\smoke.jsonl
+```
+
+Move the chef and press/release Grab or Interact while recording. The contract
+is documented in
+[`docs/demonstration-schema.md`](docs/demonstration-schema.md).
+
+## Phase D acceptance
+
+Start inside active Practice with F9 enabled. Run a quick reset check before the
+formal 500-cycle gate:
+
+```powershell
+python python\phase_d_accept.py reset 20
+python python\phase_d_accept.py reset 500
+```
+
+For movement fidelity:
+
+```powershell
+python python\phase_d_accept.py timescale x
+```
+
+Stand beside one clear adjacent floor tile and choose its world direction:
+`x` (right arrow), `-x` (left), `z` (up), or `-z` (down). The harness runs a
+compact 0.9-unit out/back shuttle, prompts for F5/F6/F7 (1x/2x/3x), records raw
+trajectories, and writes machine-readable results under `runs/phase_d/`.
+Practice exit uses
+SecondaryAction1 to reload the pre-Practice autosave; `QuitSection` cannot be
+used for cycling because `StartPractice` is only valid during restaurant
+preparation.
 
 ## Next
 
-- Confirm the walk-to-target demo and record it — first programmatic movement is worth having on tape.
-- Record and verify `runs/golden/obs_0.1_day1.jsonl` with `python/record.py`.
-- Run the Phase D ready, termination, reset, and time-scale acceptance harness.
-- Add layout tiles and blueprint observations under additive optional fields or a new schema version as appropriate.
-- Add episode reset via `Request` + practice mode.
-- Add a Gymnasium wrapper.
+- Restart PlateUp and live-smoke the native-input recorder with F9 off.
+- Verify `runs/demos/smoke.jsonl`, then record matched hand-played burger and
+  steak sessions.
+- Choose the initial recipe from measured demonstration complexity and service
+  throughput.
+- Define the Gymnasium wrapper only after the recorder and recipe benchmark are
+  accepted. Real-game motor training remains restricted to 1x.
