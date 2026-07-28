@@ -1,6 +1,6 @@
 # Recipe benchmark protocol
 
-**Status:** protocol declared, no recordings taken
+**Status:** protocol declared and analyzer validated; no benchmark recordings taken
 **Pinned game:** PlateUp `1.4.3-FF8F`
 **Bridge:** `0.3.0`
 **Protocol / schemas:** `1` / `obs_0.1` / `act_0.1` / `demo_0.1`
@@ -121,18 +121,46 @@ data are indistinguishable from a preference.
 | # | Metric | Definition | Easier means |
 |---:|---|---|---|
 | 1 | **Demonstration failure rate** | Ruined-item events plus orders never satisfied before the group departed, divided by attempted meals. | lower |
-| 2 | **Interactions per completed meal** | Segmented interaction events (§4.4) attributed to a completed order, divided by completed orders. | lower |
-| 3 | **Service slack** | Median `patience_frac` remaining at each group's first delivery. | higher |
+| 2 | **Interactions per completed meal** | Segmented interaction events (§4.4) that produced an observable change, divided by completed orders. | lower |
+| 3 | **Process seconds per completed meal** | Item-seconds spent undergoing any process, divided by completed orders. | lower |
 
 Ordering rationale: a chain a *human* cannot execute reliably will be worse for a
-policy, so reliability outranks length; length outranks slack because it drives
-both motor and planner difficulty, while slack is partly a property of the
-generated demand.
+policy, so reliability outranks the rest. Interaction count outranks process time
+because it is the motor and planner burden directly, whereas process time is
+mostly unattended waiting that a policy can overlap with other work.
 
-Throughput is deliberately **not** a top-level decisive metric. Raw meals per
-minute is not comparable across arms when customer load may differ by design —
-that is what the +30% claim asserts. Service slack measures the same pressure
-after demand is accounted for.
+Metric 3 counts concurrent processes separately. Running two hobs at once is
+demonstrator skill; the metric is meant to price the recipe, not the player.
+
+Throughput is deliberately **not** a decisive metric. Raw meals per minute is not
+comparable across arms when customer load may differ by design — that is what the
++30% claim asserts.
+
+### 4.1.1 Why metric 3 is not a demand-pressure measure
+
+An earlier draft of this protocol used **service slack**, the patience remaining
+when a group is first served. Measurement against the existing artifacts killed
+it, and the replacement was chosen from data rather than argument:
+
+| Candidate | Measured on `runs/golden/obs_0.1_day1.jsonl` | Verdict |
+|---|---|---|
+| Patience at first delivery | 0.996, 0.997, 0.998 | No dynamic range. |
+| Minimum patience per group | 0.977, 0.981, 0.998, 0.998 | No dynamic range. |
+| Order latency | 0.3 s, 0.6 s, 0.7 s | Measures nothing; see below. |
+| Process seconds per meal | 5.5 s | Usable. |
+
+Patience barely moves on Day 1 because Day 1 is not demanding and patience resets
+on every phase change, so any patience-derived metric saturates near 1.0 for both
+arms. Order latency fails for a different reason: with a **single-dish menu**
+every customer orders the same thing, so a competent demonstrator pre-plates and
+delivers the instant the order appears. Latency then measures pre-plating, not
+production.
+
+The consequence is worth stating plainly: **Day 1 does not stress service
+capacity**, so this benchmark cannot compare the two recipes on demand pressure.
+It compares them on the intrinsic cost of the production chain instead. If the
+recipe decision later needs a demand-pressure comparison, it needs a harder day
+than Day 1 and a new protocol.
 
 ### 4.2 Reported, not decisive
 
@@ -143,8 +171,17 @@ Reported in the ledger for every session, but not used to pick the winner:
 - orders per day and meals completed per service minute;
 - money at end of day and lives remaining;
 - burn / wrong-doneness events specifically, separated from other failures;
+- served-doneness distribution, read from the plated dish's component items;
 - rejected-layout count and discarded-session count;
-- service duration and total recording wall time.
+- service duration and total recording wall time;
+- the saturating diagnostics from §4.1.1 (patience slack, minimum patience, and
+  order latency), retained so a later day-2+ protocol can confirm they start
+  discriminating once the day is genuinely demanding.
+
+`is_bad` is **not** counted as a failure. The observation schema records it as a
+lookahead flag that becomes true on Well-done steak, which is still servable.
+Counting it would have handed the benchmark to burgers automatically. It is
+reported as an at-risk count instead.
 
 ### 4.3 Excluded
 
@@ -165,6 +202,13 @@ filtered out.
 The pairing window, the classification set, and the measured null rate are
 defined by the analyzer and must be validated under §6 before any benchmark
 recording is analyzed.
+
+The window is set to 12 ticks, two observation intervals. Widening it changes
+nothing: on `runs/demos/smoke.jsonl` the classification is identical at 6, 12,
+24, 60, and 180 ticks. The null interactions in that recording are genuine
+misfires — presses with nothing in reach — not a pairing artefact. The null rate
+must still be reported per session, because a recipe whose interactions are
+harder to aim will show it here.
 
 ### 4.5 Recipe provenance
 
@@ -211,17 +255,36 @@ a measured one and lowers the bar for the §7 revisit.
 The analyzer must be validated before it is trusted to decide anything. It is
 validated against artifacts that already exist, so this requires no game time.
 
+Run with:
+
+```powershell
+python python\demo_analyze.py validate
+```
+
 | Check | Artifact | Requirement |
 |---|---|---|
-| Parses a real demo recording | `runs/demos/smoke.jsonl` | No crash; reports frame counts matching `demo_record.py verify`. |
-| Parses a real full day | `runs/golden/obs_0.1_day1.jsonl` | Order and group counts match §2.3 of the ledger: 4 groups, 308 order entries, 3 satisfaction transitions. |
-| Handles a demo-free file | `runs/golden/obs_0.1_day1.jsonl` | Observation metrics computed; interaction metrics reported as unavailable, not zero. |
-| Rejects the smoke recording | `runs/demos/smoke.jsonl` | Rejected as a benchmark session: `--recipe smoke`, no derivable recipe, no completed day. |
-| Segmentation sanity | `runs/demos/smoke.jsonl` | Interaction events found; null rate reported and stated in the ledger. |
+| Group, order, and satisfaction counts | `runs/golden/obs_0.1_day1.jsonl` | Matches ledger §2.3 exactly: 4 groups, 308 order entries, 3 satisfaction transitions. |
+| Recipe derivation | `runs/golden/obs_0.1_day1.jsonl` | Derives `burger` from ordered item IDs. |
+| Demo-free file | `runs/golden/obs_0.1_day1.jsonl` | Observation metrics computed; interaction metrics reported unavailable, **not** zero. |
+| Provenance mismatch | `runs/demos/smoke.jsonl` | Declared `smoke`, derived `steak`; the mismatch rejects the session. |
+| Incomplete day | `runs/demos/smoke.jsonl` | Rejected, with the point in the day the recording stopped. |
+| Segmentation | `runs/demos/smoke.jsonl` | Interaction events found; null rate reported. |
 
-The golden-trace numbers are the load-bearing check: they are independently
+The golden-trace counts are the load-bearing check: they are independently
 recorded in the ledger, so a mismatch means the analyzer is wrong rather than the
 trace.
+
+Two of these checks were corrected by the data rather than written from
+expectation, and both corrections are worth keeping visible:
+
+- The smoke session was assumed to have no derivable recipe. It is in fact a
+  **steak** Day 1, recorded with `--recipe smoke`. That makes it a live proof
+  that the §4.5 provenance cross-check fires, which is stronger than the check
+  originally specified.
+- The golden trace was assumed to be a complete day. It stops at 94.6 s of a
+  100 s day, so it is correctly rejected as a benchmark session. It remains
+  valid as a schema-regression artifact, which is all the ledger ever claimed
+  for it.
 
 Passing these checks is logged as its own ledger entry, separate from the
 benchmark result.
@@ -245,6 +308,13 @@ A revisit produces a new ledger entry. The original entry is retained.
 ---
 
 ## 8. Procedure
+
+Confirm the analyzer still reproduces the ledger's recorded counts before a
+benchmark run, and after any change to it:
+
+```powershell
+python python\demo_analyze.py validate
+```
 
 ```powershell
 # Preparation, per session. Restaurant regenerated until §3.1 accepts it.
@@ -285,3 +355,16 @@ argument — the rule is fixed by this document, not by the invocation.
   margin rule rather than a *p*-value on purpose.
 - `on_fire` has never been observed (`observation-schema.md` known gaps), so
   fire is out of scope for the failure metric.
+- **The two arms fail asymmetrically.** Steak has named doneness states
+  (`Steak - Rare / Medium / Well-done / Burned`) but the item dictionary has no
+  burger-specific burned variant: an overcooked patty becomes the generic
+  `Burned Food`. Failure counting matches on the word "burned" so both arms are
+  counted the same way, but §10.5's "wrong-doneness rate" is only separable for
+  steak. For burgers there is no servable-but-suboptimal state at all, which is
+  itself part of what this benchmark is measuring.
+- Day 1 does not stress service capacity (§4.1.1), so this protocol cannot
+  compare the recipes under load.
+- Interaction attribution assumes a solo restaurant. `demo_input.player` is a
+  native device source ID while `obs.players[].id` is `CPlayer.ID`, so changes
+  are attributed to the single observed player. A two-player recording would
+  need that mapping resolved first.
