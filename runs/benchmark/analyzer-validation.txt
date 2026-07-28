@@ -1,0 +1,12 @@
+PASS  golden trace groups                              got 4, ledger section 2.3 records 4
+PASS  golden trace order_entry_frames                  got 308, ledger section 2.3 records 308
+PASS  golden trace satisfaction_transitions            got 3, ledger section 2.3 records 3
+PASS  golden trace recipe derived                      derived 'burger' from {'Burger - Plated': 308}
+PASS  demo-free file reports interactions unavailable  available=False, per-meal=None
+PASS  demo-free file still yields observation metrics  failure_rate=0.0, process sec/meal=5.5
+PASS  smoke recording rejected as a benchmark session  day 1 did not run to completion (recording stopped at 24.7% of the day; keep recording until the day ends); declared recipe 'smoke' does not match derived 'steak'
+PASS  declared/derived recipe mismatch is caught       declared 'smoke', derived 'steak'
+PASS  incomplete day is caught                         day 1 did not run to completion (recording stopped at 24.7% of the day; keep recording until the day ends); declared recipe 'smoke' does not match derived 'steak'
+PASS  smoke segmentation produced events               paired 10 of 10 pressed edges, null rate 0.600
+
+OK -- 10 analyzer checks passed against recorded artifacts

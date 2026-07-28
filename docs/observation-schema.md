@@ -544,8 +544,12 @@ The canonical target is:
 runs/golden/obs_0.1_day1.jsonl
 ```
 
-It contains a full hand-played day with `manifest` and `hello` records at the
-top. The canonical trace was recorded with bridge `0.2.4`, session
+It contains a hand-played day with `manifest` and `hello` records at the top.
+The recording stops at `seconds_elapsed = 94.555` of a 100-second day, so it
+covers the full customer lifecycle but not the final seconds of the day; see
+`verified-successes.md` section 2.6. That is sufficient for schema regression
+and insufficient for a recipe benchmark session. The canonical trace was
+recorded with bridge `0.2.4`, session
 `cf908a54f962475f8188e9ddd5b3f4b7`, and trace SHA-256
 `5CB703978261E4178A0BA3FAE4E4D2C881819DA6AA30857E49D89424FCA74539`.
 The prior bridge `0.2.0` trace is retained under

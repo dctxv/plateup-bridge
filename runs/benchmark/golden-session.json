@@ -1,0 +1,79 @@
+{
+  "acceptance": {
+    "accepted": false,
+    "notes": [],
+    "problems": [
+      "not a human demonstration recording",
+      "demo_schema=None",
+      "day 1 did not run to completion (recording stopped at 94.6% of the day; keep recording until the day ends)",
+      "no demo_input frames",
+      "declared recipe None does not match derived 'burger'"
+    ],
+    "table_size": null
+  },
+  "bridge_version": "0.2.4",
+  "demo_frames": 0,
+  "interactions": {
+    "available": false,
+    "reason": "no demo_input Pressed edges (observation-only file)"
+  },
+  "manifest": {
+    "act_schema": "act_0.1",
+    "bridge_version": "0.2.4",
+    "connected_at": 1785236299.61614,
+    "game_version": "1.4.3-FF8F",
+    "kind": "manifest",
+    "mod_hash": "a95958844ee81fd6515e7e93a3cd3fe5822a2b75d86d18192675e5acecfea1c4",
+    "obs_schema": "obs_0.1",
+    "protocol": 1,
+    "session_id": "cf908a54f962475f8188e9ddd5b3f4b7",
+    "unity_version": "2020.3.48f1"
+  },
+  "metrics": {
+    "failure_rate": 0.0,
+    "interactions_per_meal": null,
+    "process_seconds_per_meal": 5.477500000000002
+  },
+  "mod_hash": "a95958844ee81fd6515e7e93a3cd3fe5822a2b75d86d18192675e5acecfea1c4",
+  "observations": 2544,
+  "path": "runs\\golden\\obs_0.1_day1.jsonl",
+  "recipe": {
+    "declared": null,
+    "derived": "burger",
+    "main_dishes": {
+      "Burger - Plated": 308
+    },
+    "matches": false,
+    "side_dishes": {}
+  },
+  "service": {
+    "at_risk_items": 4,
+    "failure_events": 0,
+    "failure_rate": 0.0,
+    "group_sizes": {
+      "1": 4
+    },
+    "groups": 4,
+    "lives_end": 1,
+    "meals_per_service_minute": 2.5382052773518056,
+    "minimum_patience": 0.9895,
+    "money_end": 12,
+    "money_start": 0,
+    "order_entry_frames": 308,
+    "order_identity_changes": 0,
+    "order_latency": 0.5549999999999997,
+    "orders_attempted": 4,
+    "orders_completed": 4,
+    "orders_unsatisfied": 0,
+    "process_item_seconds": 21.910000000000007,
+    "process_seconds_per_meal": 5.477500000000002,
+    "ruined_item_names": {},
+    "ruined_items": 0,
+    "satisfaction_transitions": 3,
+    "served_doneness": {},
+    "service_frames": 2166,
+    "service_seconds": 94.555,
+    "service_slack": 0.997,
+    "slack_samples": 3
+  }
+}

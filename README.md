@@ -215,6 +215,28 @@ Move the chef and press/release Grab or Interact while recording. The contract
 is documented in
 [`docs/demonstration-schema.md`](docs/demonstration-schema.md).
 
+## Recipe benchmark
+
+`demo_record.py verify` checks transport integrity. Measuring a demonstration is
+a separate offline step that needs neither PlateUp nor the bridge:
+
+```powershell
+python python\demo_analyze.py validate
+python python\demo_analyze.py session runs\demos\burger\day1-01.jsonl
+python python\demo_analyze.py benchmark runs\demos\burger runs\demos\steak
+```
+
+`validate` re-derives the golden trace's recorded counts and should be run after
+any change to the analyzer. `session` reports the metrics for one recording and
+says whether it is acceptable as a benchmark session. `benchmark` applies the
+decision rule and reports the winner, the deciding metric, or INCONCLUSIVE.
+
+The matched conditions, sample size, metrics, and decision rule are fixed in
+advance by
+[`docs/recipe-benchmark-protocol.md`](docs/recipe-benchmark-protocol.md). The
+analyzer takes no threshold or weighting arguments, so the rule cannot be
+adjusted after seeing the data.
+
 ## Phase D acceptance
 
 Start inside active Practice with F9 enabled. Run a quick reset check before the
@@ -242,10 +264,13 @@ preparation.
 
 ## Next
 
-- Restart PlateUp and live-smoke the native-input recorder with F9 off.
-- Verify `runs/demos/smoke.jsonl`, then record matched hand-played burger and
-  steak sessions.
-- Choose the initial recipe from measured demonstration complexity and service
-  throughput.
-- Define the Gymnasium wrapper only after the recorder and recipe benchmark are
-  accepted. Real-game motor training remains restricted to 1x.
+- Record matched hand-played burger and steak Day 1 sessions under the
+  benchmark protocol: 6 to 8 accepted sessions per recipe, alternating arms,
+  each recording running past the end of the day.
+- Run `demo_analyze.py benchmark` and log the recipe decision in the ledger.
+- Define the Gymnasium wrapper only after the recipe benchmark is accepted.
+  Real-game motor training remains restricted to 1x.
+
+Still open and unrelated to the recipe gate: the 100,000-command formal soak
+remains FAIL/PENDING after one 600-frame position freeze, and must close before
+any unattended training run. The popup-capture transition soak is inconclusive.

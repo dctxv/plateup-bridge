@@ -52,6 +52,9 @@ sample count has not been reached.
 | Golden trace on current bridge | Bridge `0.2.4` trace promoted to the canonical filename; prior `0.2.0` trace archived. | PASS |
 | Runtime DLL provenance | Bridge `0.2.4` live handshake hash exactly matches the built/deployed DLL. | PASS |
 | Native-input demonstration recorder | 9,334 native-input frames aligned with 854 observations; zero sequence gaps; active input player matched the observed player. | PASS (live smoke) |
+| Recipe benchmark protocol | Matched conditions, sample size, metrics, and decision rule declared before any benchmark recording. | DECLARED |
+| Demonstration analyzer | Reproduces the ledger's golden-trace counts exactly; 10/10 offline checks pass. | PASS |
+| Recipe benchmark result | Not started. No benchmark session has been recorded. | PENDING |
 
 ---
 
@@ -252,6 +255,64 @@ The detailed field contract and enum mappings remain in
 - **Status:** PASS for the live smoke gate.
 - **Limitation:** this proves capture, alignment, player routing, edges, and
   transport integrity. It is not yet a recipe demonstration benchmark.
+- **Later finding:** section 2.5 established that this recording is a **steak**
+  Day 1 played with `--recipe smoke`. That does not affect the smoke gate, which
+  never claimed a recipe, and the recording is now the live proof that the
+  analyzer's provenance cross-check fires.
+
+### 2.5 Demonstration analyzer offline validation
+
+- **Date/time:** 2026-07-28 22:49 AEST
+- **Game:** PlateUp `1.4.3-FF8F`
+- **Bridge:** `0.3.0` (analyzer is offline and reads recorded files only)
+- **Protocol / schemas:** `1` / `obs_0.1` / `act_0.1` / `demo_0.1`
+- **Command:** `python python\demo_analyze.py validate`
+- **Artifact:** [analyzer-validation.txt](../runs/benchmark/analyzer-validation.txt)
+- **Artifact SHA-256:**
+  `B44B326233FFF00DBC2B7F54F65E77BA2102F2F58DA462CFB76C9ECECBA080F2`
+- **Inputs:** `runs/golden/obs_0.1_day1.jsonl` (SHA-256 verified as
+  `5cb703978261e4178a0ba3fae4e4d2c881819da6aa30857e49d89424fca74539`,
+  matching section 2.3) and `runs/demos/smoke.jsonl` (section 2.4).
+- **Acceptance gate:** the analyzer must independently reproduce the
+  golden-trace counts already recorded in section 2.3, report interaction
+  metrics as unavailable rather than zero on a demonstration-free file, and
+  reject the smoke recording as a benchmark session.
+- **Observed:** 10 of 10 checks passed.
+  - Golden trace: **4** groups, **308** order entry frames, **3**
+    satisfaction transitions. All three match section 2.3 exactly.
+  - Recipe derived from ordered item IDs alone: **burger**
+    (`Burger - Plated`, 308 entries).
+  - Demonstration-free file: interaction metrics `unavailable`; observation
+    metrics still computed (failure rate `0.000`, process seconds per meal
+    `5.5`).
+  - Smoke recording rejected, with both reasons reported: declared `smoke`
+    versus derived `steak`, and the day stopping at 24.7% of its length.
+  - Segmentation: 10 of 10 Pressed edges paired, null rate `0.600`.
+- **Result:** `OK -- 10 analyzer checks passed against recorded artifacts`.
+- **Status:** PASS for the analyzer against recorded artifacts.
+- **Limitation:** this validates the analyzer, not the benchmark. It uses
+  the only two recordings that exist, neither of which is an acceptable
+  benchmark session. The decision rule in protocol section 5 was exercised
+  separately against synthetic recordings covering a clear win, a
+  lexicographic fall-through to metric 3, an INCONCLUSIVE tiebreak, and the
+  quick-sample threshold; those recordings were fabricated and are
+  deliberately **not** retained as evidence.
+
+### 2.6 Golden trace is a partial day: correction
+
+- **Date:** 2026-07-28
+- The canonical trace was described as containing a full hand-played day. The
+  analyzer measured its final Day 1 frame at `seconds_elapsed = 94.555` against
+  `day_length = 100`, with `time_unbounded = 0.946` and zero groups remaining.
+- The recording therefore stops approximately 5.4 seconds before the day ends.
+- **Impact on section 2.3:** none. That gate is a schema and lifecycle
+  regression check, and every count it records is unchanged and independently
+  reproduced in section 2.5.
+- **Impact elsewhere:** the trace is correctly **rejected** as a recipe
+  benchmark session, because protocol section 3 requires the recording to run
+  past the end of the day. The wording in `observation-schema.md` was corrected
+  to match.
+- **Status:** documentation correction. No result is withdrawn.
 
 ---
 
@@ -513,12 +574,19 @@ for 5M steps is not approved.
 
 1. Retain the 1x-only motor-fidelity decision unless new evidence supersedes the
    failed 2x/3x gate.
-2. Record matched burger and steak demonstrations, then make the initial recipe
-   decision from measured complexity and service throughput.
+2. Record matched burger and steak demonstrations under
+   [recipe-benchmark-protocol.md](recipe-benchmark-protocol.md), then decide the
+   recipe with `python python\demo_analyze.py benchmark`.
 
-The Phase D measurements, canonical trace, and native-input recorder smoke gate
-are complete. No Gym/environment design should be treated as stable until the
-remaining recipe gate is closed.
+The Phase D measurements, canonical trace, native-input recorder smoke gate, and
+demonstration analyzer are complete. The benchmark protocol and its decision rule
+are declared. Only the recordings remain.
+
+No Gym/environment design should be treated as stable until the recipe gate is
+closed. Note that the benchmark measures intrinsic production-chain cost and
+**not** behaviour under service load: Day 1 saturates every demand-pressure
+proxy tested (protocol section 4.1.1), so a load comparison would need a harder
+day and its own protocol.
 
 ---
 

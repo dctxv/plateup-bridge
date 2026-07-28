@@ -1,0 +1,94 @@
+{
+  "acceptance": {
+    "accepted": false,
+    "notes": [],
+    "problems": [
+      "day 1 did not run to completion (recording stopped at 24.7% of the day; keep recording until the day ends)",
+      "declared recipe 'smoke' does not match derived 'steak'"
+    ],
+    "table_size": null
+  },
+  "bridge_version": "0.3.0",
+  "demo_frames": 9334,
+  "interactions": {
+    "ambiguous_window": 0,
+    "available": true,
+    "classified": {
+      "null_interaction": 6,
+      "pickup": 2,
+      "place": 2
+    },
+    "effective_interactions": 4,
+    "null_interactions": 6,
+    "null_rate": 0.6,
+    "paired": 10,
+    "pressed_edges": 10,
+    "solo_player_attribution": true,
+    "unresolved": 0
+  },
+  "manifest": {
+    "act_schema": "act_0.1",
+    "bridge_version": "0.3.0",
+    "connected_at": 1785238249.061646,
+    "demo_schema": "demo_0.1",
+    "game_version": "1.4.3-FF8F",
+    "kind": "manifest",
+    "metadata": {
+      "recipe": "smoke"
+    },
+    "mod_hash": "164a7ae4f2c796e3db0d7d8f7622daae49450ad515ef0319e320f214996af8d0",
+    "obs_schema": "obs_0.1",
+    "protocol": 1,
+    "recorded_at": "2026-07-28T21:30:49+1000",
+    "recording": "human_demonstration",
+    "session_id": "5c6643a40d6d41ae9fc1e4cc54d5bd70",
+    "unity_version": "2020.3.48f1"
+  },
+  "metrics": {
+    "failure_rate": 1.0,
+    "interactions_per_meal": null,
+    "process_seconds_per_meal": null
+  },
+  "mod_hash": "164a7ae4f2c796e3db0d7d8f7622daae49450ad515ef0319e320f214996af8d0",
+  "observations": 854,
+  "path": "runs\\demos\\smoke.jsonl",
+  "recipe": {
+    "declared": "smoke",
+    "derived": "steak",
+    "main_dishes": {
+      "Steak - Plated": 204
+    },
+    "matches": false,
+    "side_dishes": {}
+  },
+  "service": {
+    "at_risk_items": 0,
+    "failure_events": 1,
+    "failure_rate": 1.0,
+    "group_sizes": {
+      "1": 1
+    },
+    "groups": 1,
+    "lives_end": 1,
+    "meals_per_service_minute": 0.0,
+    "minimum_patience": 0.95,
+    "money_end": 0,
+    "money_start": 0,
+    "order_entry_frames": 204,
+    "order_identity_changes": 0,
+    "order_latency": null,
+    "orders_attempted": 1,
+    "orders_completed": 0,
+    "orders_unsatisfied": 1,
+    "process_item_seconds": 0.0,
+    "process_seconds_per_meal": null,
+    "ruined_item_names": {},
+    "ruined_items": 0,
+    "satisfaction_transitions": 0,
+    "served_doneness": {},
+    "service_frames": 731,
+    "service_seconds": 24.607000000000003,
+    "service_slack": null,
+    "slack_samples": 0
+  }
+}
