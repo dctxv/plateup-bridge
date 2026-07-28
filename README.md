@@ -35,6 +35,7 @@ Get-Content "$env:USERPROFILE\AppData\LocalLow\It's Happening\PlateUp\Player.log
 | Arrows | Move |
 | F10 | Grab (hold) |
 | F11 | Interact (hold) |
+| F12 | Ready/Start (hold) |
 
 ## Observation verification
 
@@ -61,31 +62,49 @@ Python so they can change without rebuilding the mod.
 
 ## Protocol
 
-Observation, ~12 Hz:
+The first frame is a schema/provenance handshake:
 
 ```json
-{"kind":"obs","protocol":1,"tick":8412,"act_tick":8407,
- "input_queue_depth":1,"dropped_frames":0,
+{"kind":"hello","protocol":1,"bridge_version":"0.2.1",
+ "obs_schema":"obs_0.1","act_schema":"act_0.1",
+ "session_id":"...","game_version":"1.4.3-FF8F",
+ "mod_hash":"0123456789abcdef","unity":"2020.3.48f1"}
+```
+
+It is followed by one `dict` frame containing appliance, item, and process name
+maps. Observations then arrive at approximately 12 Hz:
+
+```json
+{"kind":"obs","protocol":1,"tick":8412,
  "in_restaurant":true,"paused":false,"override":true,
+ "input_captured":false,"ack_command":417,
+ "cmds_applied":412,"cmds_dropped":5,
+ "day":1,"seconds_elapsed":42.5,
+ "day_length":180.0,"money":25,"game_over":false,
  "players":[{"id":1,"x":1.1,"z":-1.5,"rot":90.0,"held":null,"captured":false}],
- "appliances":[{"e":4294967438,"aid":123,"layer":0,"x":2.0,"z":-1.0,"rot":0.0}],
+ "appliances":[{"e":"142:1","aid":123,"layer":0,"x":2.0,"z":-1.0,"rot":0.0}],
  "loose_items":[],"groups":[],"customers":[]}
 ```
 
-The first message on each connection is a `kind: "dict"` frame containing
-appliance, item, and process name maps plus the projected camera basis.
-Entity field `e` is `(Version << 32) | Index`, so identities remain unique when
-Unity recycles entity indices.
+Entity IDs use the string `"index:version"` so identities remain unique when
+Unity recycles entity indices. Never compare them across game sessions. The
+frozen field contract is documented in
+[`docs/observation-schema.md`](docs/observation-schema.md).
 
 Action, any rate:
 
 ```json
-{"Tick":8407,"MoveX":1.0,"MoveY":0.0,"Grab":false,
- "Interact":false,"StopMoving":false,"Request":"None"}
+{"Tick":8407,"CommandId":418,"MoveX":1.0,"MoveY":0.0,
+ "Grab":false,"Interact":false,"StopMoving":false,"Ready":false,
+ "MenuSelect":false,"MenuCancel":false,
+ "MenuUp":false,"MenuDown":false,"MenuLeft":false,"MenuRight":false,
+ "Request":"None"}
 ```
 
-`act_tick` identifies the action frame enqueued for that simulation step.
-While override is active, `input_queue_depth` should remain at `1`.
+The client refuses mismatched protocol, observation-schema, or action-schema
+versions instead of silently mixing incompatible trajectory data.
+`ack_command`, `cmds_applied`, and `cmds_dropped` expose command receipt without
+a separate acknowledgement channel.
 
 ## How input actually reaches the chef
 
@@ -93,7 +112,9 @@ Worth keeping, because it is not obvious and cost a lot of decompiling.
 
 ```text
 device / bridge
-   -> Player.ReportNewInput(InputState)      // also resets the liveness timer
+   -> PlayerManager.HandleNewInputData
+        +-> HandleRequest(GameStateRequest)
+        +-> Player.ReportNewInput(InputState) // also resets the liveness timer
    -> InputQueue.Enqueue
    -> InputQueue.ApplyUpdates()              // called from PlayerManager.OnUpdate
    -> Player.UpdateToEntity()                // CInputData = new { State = queue.State }
@@ -114,8 +135,9 @@ Locomotion for your own player is client-side prediction. It reads the device di
 The Harmony postfix on `BaseInputSource.GetCurrentInputData` makes predicted
 locomotion read the same injected state. A prefix on `InputSource.SetInputUpdate`
 suppresses the live-device queue producer while override is active, leaving the
-bridge as the only authoritative producer. Buttons still travel through
-`Player.ReportNewInput`.
+bridge as the only authoritative producer. The bridge enters through
+`PlayerManager.HandleNewInputData`, which handles `GameStateRequest` and then
+queues movement/buttons through `Player.ReportNewInput`.
 
 ## Findings that constrain the design
 
@@ -146,11 +168,18 @@ Grab fires on `Pressed` only. Interact acts on `Pressed` or `Held`, with `IsHeld
 | `StartPractice` | Sets `CRequestPracticeMode` |
 | `InLocalMenu` | Adds `CGamePauseRequest` |
 | `InstantJoin` | Completes joining |
+| `QuitSection` | Opens the game's Abandon Restaurant confirmation |
 
-`QuitSection`, `QuitToLobby`, `Disconnect`, and unknown values are converted to
-`None`; an agent cannot trigger saving or drop the player through this channel.
+`StartPractice` and `QuitSection` do not act immediately: each opens a
+`GenericChoiceView`, and the bridge must subsequently pulse `MenuSelect`.
+`QuitToLobby`, `Disconnect`, `KickUser`, and unknown values are converted to
+`None`; the bridge cannot trigger saving or silently drop a player.
 
-**Menus read the same component.** `GenericPopupView`, `EndOfDayPopupView`, `UnlockSelectPopupView`, and `StartDayWarningView` all consume `CInputData`. Card selection, blueprint purchase, and day start are drivable through the `Menu*` buttons already in `InputState`.
+**Menus read the same component.** `GenericPopupView`, `EndOfDayPopupView`,
+`UnlockSelectPopupView`, and `StartDayWarningView` all consume `CInputData`.
+Start-day consent specifically reads `SecondaryAction1` (`Controls.Interact3`);
+the Python `ready` field is a semantic alias for that button. Other popups use
+the menu navigation buttons in `InputState`.
 
 **Focus matters.** `InputSource.Update` zeroes input when `Platform.Current.GameHasFocus` is false. The Harmony patch bypasses this for the injected path, but verify before planning unattended overnight training.
 
@@ -161,7 +190,8 @@ Grab fires on `Pressed` only. Interact acts on `Pressed` or `Held`, with `IsHeld
 ## Next
 
 - Confirm the walk-to-target demo and record it — first programmatic movement is worth having on tape.
-- Widen `BridgeStateSystem` with orders, tables, money, layout, and day outcome.
-- Reject stale actions in Python using the `act_tick` acknowledgement.
+- Record and verify `runs/golden/obs_0.1_day1.jsonl` with `python/record.py`.
+- Run the Phase D ready, termination, reset, and time-scale acceptance harness.
+- Add layout tiles and blueprint observations under additive optional fields or a new schema version as appropriate.
 - Add episode reset via `Request` + practice mode.
 - Add a Gymnasium wrapper.

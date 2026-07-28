@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using Controllers;
@@ -17,6 +18,7 @@ namespace PlateUpBridge
     public class BridgeAction
     {
         public long Tick = -1;
+        public long CommandId;
         public float MoveX;
         public float MoveY;
         public bool Grab;
@@ -24,6 +26,13 @@ namespace PlateUpBridge
         public bool Secondary1;
         public bool Secondary2;
         public bool StopMoving;
+        public bool Ready;
+        public bool MenuSelect;
+        public bool MenuCancel;
+        public bool MenuUp;
+        public bool MenuDown;
+        public bool MenuLeft;
+        public bool MenuRight;
         public string Request = "None";
 
         public GameStateRequest ParsedRequest()
@@ -33,6 +42,7 @@ namespace PlateUpBridge
             {
                 case "none": return GameStateRequest.None;
                 case "inlocalmenu": return GameStateRequest.InLocalMenu;
+                case "quitsection": return GameStateRequest.QuitSection;
                 case "startpractice": return GameStateRequest.StartPractice;
                 case "instantjoin": return GameStateRequest.InstantJoin;
                 default: return GameStateRequest.None;
@@ -49,6 +59,9 @@ namespace PlateUpBridge
     {
         public const string PipeName = "plateup_bridge";
         public const int ProtocolVersion = 1;
+        public const string ObsSchema = "obs_0.1";
+        public const string ActSchema = "act_0.1";
+        public const string BridgeVersion = "0.2.1";
         public const int MaxOutboundBacklog = 64;
 
         const uint PipeAccessDuplex = 0x00000003;
@@ -113,6 +126,19 @@ namespace PlateUpBridge
         public static int InputQueueDepth;               // depth before ApplyUpdates drains once
         public static long DroppedOutboundFrames;
 
+        // Command receipt state. ResetCommandReceipts is raised by the pipe thread
+        // and consumed by BridgeInputSystem on Unity's main thread.
+        public static long LastCommandId;
+        public static long CommandsApplied;
+        public static long CommandsDropped;
+        public static volatile bool ResetCommandReceipts;
+
+        // Run provenance. SessionId is new for every game launch.
+        public static readonly string SessionId = Guid.NewGuid().ToString("N");
+        public static string GameVersion = "unknown";
+        public static string UnityVersion = "unknown";
+        public static string ModHash = "unknown";
+
         /// <summary>
         /// The InputState the Harmony patch feeds back to the game's own device read.
         /// Written by BridgeInputSystem each tick, read by GetCurrentInputDataPatch.
@@ -127,9 +153,13 @@ namespace PlateUpBridge
         {
             if (_running) return;
             _running = true;
+            GameVersion = Application.version;
+            UnityVersion = Application.unityVersion;
+            ModHash = ComputeModHash();
             _thread = new Thread(AcceptLoop) { IsBackground = true, Name = "PlateUpBridgePipe" };
             _thread.Start();
-            Debug.Log("[BRIDGE] pipe server starting on \\\\.\\pipe\\" + PipeName);
+            Debug.Log("[BRIDGE] pipe server starting on \\\\.\\pipe\\" + PipeName
+                      + " | game=" + GameVersion + " mod=" + ModHash);
         }
 
         public static void Stop()
@@ -149,6 +179,41 @@ namespace PlateUpBridge
             Outbound.Enqueue(json);
         }
 
+        static string Hello()
+        {
+            return "{\"kind\":\"hello\""
+                 + ",\"protocol\":" + ProtocolVersion
+                 + ",\"bridge_version\":\"" + BridgeVersion + "\""
+                 + ",\"obs_schema\":\"" + ObsSchema + "\""
+                 + ",\"act_schema\":\"" + ActSchema + "\""
+                 + ",\"session_id\":\"" + SessionId + "\""
+                 + ",\"game_version\":\"" + GameVersion + "\""
+                 + ",\"mod_hash\":\"" + ModHash + "\""
+                 + ",\"unity\":\"" + UnityVersion + "\""
+                 + "}";
+        }
+
+        static string ComputeModHash()
+        {
+            try
+            {
+                var path = typeof(Bridge).Assembly.Location;
+                if (string.IsNullOrEmpty(path) || !File.Exists(path)) return "unknown";
+                using (var sha = SHA256.Create())
+                using (var stream = File.OpenRead(path))
+                {
+                    return BitConverter.ToString(sha.ComputeHash(stream))
+                        .Replace("-", "")
+                        .Substring(0, 16)
+                        .ToLowerInvariant();
+                }
+            }
+            catch
+            {
+                return "unknown";
+            }
+        }
+
         static void AcceptLoop()
         {
             while (_running)
@@ -161,10 +226,12 @@ namespace PlateUpBridge
 
                         Drain(Inbound);
                         Drain(Outbound);
-                        Connected = true;
+                        ResetCommandReceipts = true;
                         _warned = false;
                         Debug.Log("[BRIDGE] client connected");
 
+                        WriteFrame(pipe, Hello());
+                        Connected = true;
                         PumpConnection(pipe);
                     }
                 }
@@ -194,9 +261,7 @@ namespace PlateUpBridge
                 string message;
                 while (Outbound.TryDequeue(out message))
                 {
-                    var bytes = Encoding.UTF8.GetBytes(message + "\n");
-                    pipe.Write(bytes, 0, bytes.Length);
-                    pipe.Flush();
+                    WriteFrame(pipe, message);
                     worked = true;
                 }
 
@@ -235,6 +300,13 @@ namespace PlateUpBridge
 
                 if (!worked) Thread.Sleep(1);
             }
+        }
+
+        static void WriteFrame(NamedPipeServerStream pipe, string message)
+        {
+            var bytes = Encoding.UTF8.GetBytes(message + "\n");
+            pipe.Write(bytes, 0, bytes.Length);
+            pipe.Flush();
         }
 
         static NamedPipeServerStream CreateConnectedPipe()

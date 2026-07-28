@@ -1,0 +1,230 @@
+[
+  {
+    "name": "SecondaryAction1 tap",
+    "field": "secondary1",
+    "hold": 1,
+    "move": [
+      0.0,
+      0.0
+    ],
+    "before": {
+      "held": null,
+      "held_e": null,
+      "pos": [
+        -4.99,
+        1.65
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "after": {
+      "held": null,
+      "held_e": null,
+      "pos": [
+        -4.99,
+        1.65
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "changed": []
+  },
+  {
+    "name": "SecondaryAction1 hold",
+    "field": "secondary1",
+    "hold": 40,
+    "move": [
+      0.0,
+      0.0
+    ],
+    "before": {
+      "held": null,
+      "held_e": null,
+      "pos": [
+        -4.99,
+        1.65
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "after": {
+      "held": null,
+      "held_e": null,
+      "pos": [
+        -4.99,
+        1.65
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "changed": []
+  },
+  {
+    "name": "SecondaryAction2 tap",
+    "field": "secondary2",
+    "hold": 1,
+    "move": [
+      0.0,
+      0.0
+    ],
+    "before": {
+      "held": null,
+      "held_e": null,
+      "pos": [
+        -4.99,
+        1.65
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "after": {
+      "held": null,
+      "held_e": null,
+      "pos": [
+        -4.99,
+        1.65
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "changed": []
+  },
+  {
+    "name": "SecondaryAction2 hold",
+    "field": "secondary2",
+    "hold": 40,
+    "move": [
+      0.0,
+      0.0
+    ],
+    "before": {
+      "held": null,
+      "held_e": null,
+      "pos": [
+        -4.99,
+        1.65
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "after": {
+      "held": null,
+      "held_e": null,
+      "pos": [
+        -4.99,
+        1.65
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "changed": []
+  },
+  {
+    "name": "StopMoving + move",
+    "field": "stop",
+    "hold": 30,
+    "move": [
+      1.0,
+      0.0
+    ],
+    "before": {
+      "held": null,
+      "held_e": null,
+      "pos": [
+        -4.99,
+        1.65
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "after": {
+      "held": null,
+      "held_e": null,
+      "pos": [
+        -3.89,
+        1.65
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "changed": [
+      "    pos: (-4.99, 1.65) -> (-3.89, 1.65)"
+    ]
+  },
+  {
+    "name": "SecondaryAction2 tap (held item)",
+    "field": "secondary2",
+    "hold": 1,
+    "move": [
+      0.0,
+      0.0
+    ],
+    "before": {
+      "held": "Turkey - Ingredient",
+      "held_e": "955:184",
+      "pos": [
+        1.9,
+        0.6
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "after": {
+      "held": "Turkey - Ingredient",
+      "held_e": "955:184",
+      "pos": [
+        1.9,
+        0.6
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "changed": []
+  },
+  {
+    "name": "Grab tap facing empty floor",
+    "field": "grab",
+    "hold": 1,
+    "move": [
+      1.0,
+      0.0
+    ],
+    "before": {
+      "held": "Turkey - Ingredient",
+      "held_e": "955:184",
+      "pos": [
+        1.9,
+        0.6
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "after": {
+      "held": "Turkey - Ingredient",
+      "held_e": "955:184",
+      "pos": [
+        2.88,
+        0.5
+      ],
+      "loose": 0,
+      "loose_names": [],
+      "captured": false
+    },
+    "changed": [
+      "    pos: (1.9, 0.6) -> (2.88, 0.5)"
+    ]
+  }
+]

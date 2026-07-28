@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <!-- Game + Unity assemblies. Private=false: never copy these next to the mod. -->
-    <Reference Include="Unity.Entities;Unity.Collections;Unity.Mathematics;UnityEngine;UnityEngine.CoreModule;UnityEngine.InputLegacyModule;Kitchen.Common;Kitchen.GameData;KitchenMode;Controllers;KitchenMods;Newtonsoft.Json;Assembly-CSharp;Sirenix.Serialization">
+    <Reference Include="Unity.Entities;Unity.Collections;Unity.Mathematics;UnityEngine;UnityEngine.CoreModule;UnityEngine.InputLegacyModule;Kitchen.Common;Kitchen.GameData;KitchenMode;Kitchen.RestaurantMode;Controllers;KitchenMods;Newtonsoft.Json;Assembly-CSharp;Sirenix.Serialization">
       <HintPath>$(ManagedDir)\%(Identity).dll</HintPath>
       <Private>false</Private>
     </Reference>

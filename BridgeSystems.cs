@@ -37,6 +37,8 @@ namespace PlateUpBridge
         Vector2 _manualMove = Vector2.zero;
         bool _manualGrab;
         bool _manualInteract;
+        bool _manualReady;
+        GameStateRequest _previousRequest = GameStateRequest.None;
 
         protected override void Initialise()
         {
@@ -48,7 +50,7 @@ namespace PlateUpBridge
             Bridge.InputQueueDepth = 0;
             BridgePatcher.ApplyOnce();
             Bridge.Start();
-            Debug.Log("[BRIDGE] input system online. F9 = toggle override, F10 = grab, F11 = interact, arrows = move");
+            Debug.Log("[BRIDGE] input system online. F9 override, F10 grab, F11 interact, F12 ready, arrows move");
         }
 
         protected override void OnUpdate()
@@ -56,16 +58,36 @@ namespace PlateUpBridge
             Bridge.Tick++;
             HandleDebugKeys();
 
+            if (Bridge.ResetCommandReceipts)
+            {
+                _action = NeutralAction;
+                Bridge.LastActionTick = Bridge.Tick;
+                Bridge.LastCommandId = 0;
+                Bridge.CommandsApplied = 0;
+                Bridge.CommandsDropped = 0;
+                Bridge.ResetCommandReceipts = false;
+            }
+
             // Pull the newest action; discard any backlog so we never lag behind.
             string line;
+            bool received = false;
             while (Bridge.Inbound.TryDequeue(out line))
             {
                 try
                 {
                     var a = JsonConvert.DeserializeObject<BridgeAction>(line);
-                    if (a != null) { _action = a; Bridge.LastActionTick = Bridge.Tick; }
+                    if (a == null) continue;
+                    if (received) Bridge.CommandsDropped++;
+                    _action = a;
+                    received = true;
                 }
                 catch { /* malformed frame, ignore */ }
+            }
+            if (received)
+            {
+                Bridge.LastActionTick = Bridge.Tick;
+                Bridge.LastCommandId = _action.CommandId;
+                Bridge.CommandsApplied++;
             }
 
             // Watchdog: if the client goes quiet, stop moving but keep the heartbeat alive.
@@ -77,11 +99,27 @@ namespace PlateUpBridge
             Bridge.Injected = next;
             Bridge.AppliedActionTick = -1;
 
-            if (!Bridge.Override) return;
+            if (!Bridge.Override)
+            {
+                _previousRequest = GameStateRequest.None;
+                return;
+            }
 
             if (Manager == null) Manager = World.GetExistingSystem<PlayerManager>();
             if (Manager == null) return;
 
+            // GameStateRequest is not consumed from CInputData. The game's native
+            // command router sends it through PlayerManager.HandleNewInputData(),
+            // which calls HandleRequest() before enqueuing the same InputState.
+            // Route bridge input through that public entry point too. A held request
+            // is dispatched once; normal buttons and movement still enqueue each tick.
+            var requested = next.Request;
+            bool dispatchRequest =
+                requested != GameStateRequest.None &&
+                _previousRequest == GameStateRequest.None;
+            _previousRequest = requested;
+
+            bool firstPlayer = true;
             using (var entities = Players.ToEntityArray(Allocator.Temp))
             {
                 foreach (var e in entities)
@@ -89,10 +127,22 @@ namespace PlateUpBridge
                     CPlayer p;
                     if (!Require(e, out p)) continue;
 
-                    Player player;
-                    if (!Manager.GetPlayer(p.ID, out player, false)) continue;
+                    var routed = next;
+                    routed.Request =
+                        firstPlayer && dispatchRequest
+                            ? requested
+                            : GameStateRequest.None;
+                    firstPlayer = false;
 
-                    player.ReportNewInput(next);
+                    Manager.HandleNewInputData(new UserInputUpdate
+                    {
+                        SourceIdentifier = p.InputSource,
+                        Data = new InputUpdateEvent
+                        {
+                            User = p.ID,
+                            State = routed
+                        }
+                    });
                     Bridge.AppliedActionTick = Bridge.Connected ? _action.Tick : -1;
                 }
             }
@@ -108,9 +158,20 @@ namespace PlateUpBridge
 
             bool grab = driving && (Bridge.Connected ? _action.Grab : _manualGrab);
             bool interact = driving && (Bridge.Connected ? _action.Interact : _manualInteract);
-            bool sec1 = driving && Bridge.Connected && _action.Secondary1;
+            // StartDayWarningView consumes Controls.Interact3, represented by
+            // SecondaryAction1. Ready is a semantic alias for that same button.
+            bool sec1 = driving && (
+                Bridge.Connected
+                    ? (_action.Secondary1 || _action.Ready)
+                    : _manualReady);
             bool sec2 = driving && Bridge.Connected && _action.Secondary2;
             bool stop = driving && Bridge.Connected && _action.StopMoving;
+            bool menuSelect = driving && Bridge.Connected && _action.MenuSelect;
+            bool menuCancel = driving && Bridge.Connected && _action.MenuCancel;
+            bool menuUp = driving && Bridge.Connected && _action.MenuUp;
+            bool menuDown = driving && Bridge.Connected && _action.MenuDown;
+            bool menuLeft = driving && Bridge.Connected && _action.MenuLeft;
+            bool menuRight = driving && Bridge.Connected && _action.MenuRight;
 
             var s = InputState.Neutral;
             s.Movement = move;
@@ -119,6 +180,12 @@ namespace PlateUpBridge
             s.SecondaryAction1 = Advance(_previous.SecondaryAction1, sec1);
             s.SecondaryAction2 = Advance(_previous.SecondaryAction2, sec2);
             s.StopMoving = Advance(_previous.StopMoving, stop);
+            s.MenuSelect = Advance(_previous.MenuSelect, menuSelect);
+            s.MenuCancel = Advance(_previous.MenuCancel, menuCancel);
+            s.MenuUp = Advance(_previous.MenuUp, menuUp);
+            s.MenuDown = Advance(_previous.MenuDown, menuDown);
+            s.MenuLeft = Advance(_previous.MenuLeft, menuLeft);
+            s.MenuRight = Advance(_previous.MenuRight, menuRight);
             s.Request = (driving && Bridge.Connected) ? _action.ParsedRequest() : GameStateRequest.None;
             return s;
         }
@@ -145,6 +212,7 @@ namespace PlateUpBridge
 
             _manualGrab = Input.GetKey(KeyCode.F10);
             _manualInteract = Input.GetKey(KeyCode.F11);
+            _manualReady = Input.GetKey(KeyCode.F8);
 
             float x = 0f, y = 0f;
             if (Input.GetKey(KeyCode.RightArrow)) x += 1f;
