@@ -295,7 +295,7 @@
       "passed": true
     },
     {
-      "detail": "{'move': (0.0, 0.0), 'grab': False, 'interact': False, 'stop': False, 'ready': False}",
+      "detail": "{'move': (0.0, 0.0), 'grab': False, 'interact': False, 'stop': False, 'ready': False, 'menu_cancel': False}",
       "group": "options",
       "name": "the neutral action releases every control",
       "passed": true
@@ -307,7 +307,7 @@
       "passed": true
     },
     {
-      "detail": "{'move': (0.0, 0.0), 'grab': False, 'interact': False, 'stop': False, 'ready': False}",
+      "detail": "{'move': (0.0, 0.0), 'grab': False, 'interact': False, 'stop': False, 'ready': False, 'menu_cancel': False}",
       "group": "options",
       "name": "a paused frame produces neutral input",
       "passed": true
@@ -493,7 +493,7 @@
       "passed": true
     },
     {
-      "detail": "147 vs 147",
+      "detail": "196 vs 196",
       "group": "env",
       "name": "observation length matches the space",
       "passed": true
@@ -517,25 +517,31 @@
       "passed": true
     },
     {
-      "detail": "[0, 0, 0, 0, 0, 1]",
+      "detail": "[0, 0, 0, 1, 0, 1, 0]",
       "group": "env",
       "name": "sampled action is inside the action space",
       "passed": true
     },
     {
-      "detail": "{'move': (-1.0, 1.0), 'grab': True, 'interact': False, 'stop': True, 'ready': False}",
+      "detail": "{'move': (-1.0, 1.0), 'grab': True, 'interact': False, 'stop': True, 'ready': False, 'menu_cancel': False}",
       "group": "env",
       "name": "action decoding maps axes and buttons",
       "passed": true
     },
     {
-      "detail": "[0, 4, 1, 0, 1, 0]",
+      "detail": "[0, 4, 1, 0, 1, 0, 0]",
       "group": "env",
       "name": "action encoding round-trips",
       "passed": true
     },
     {
-      "detail": "{147}",
+      "detail": "buttons ('grab', 'interact', 'stop', 'ready', 'menu_cancel')",
+      "group": "env",
+      "name": "the action space cannot express MenuSelect",
+      "passed": true
+    },
+    {
+      "detail": "{196}",
       "group": "env",
       "name": "observation length is constant",
       "passed": true
@@ -559,7 +565,7 @@
       "passed": true
     },
     {
-      "detail": "[147]",
+      "detail": "[196]",
       "group": "env",
       "name": "the random-action soak keeps one observation shape",
       "passed": true
@@ -589,7 +595,7 @@
       "passed": true
     },
     {
-      "detail": "147 names, 147 values",
+      "detail": "196 names, 196 values",
       "group": "env",
       "name": "the encoding has one name per slot",
       "passed": true
@@ -599,8 +605,230 @@
       "group": "env",
       "name": "the encoding carries no affordance or future field",
       "passed": true
+    },
+    {
+      "detail": "day 0, warnings ['more_than_one_table', 'players_in_crane_mode', 'players_not_ready', 'players_ready', 'popups_open', 'post_unopened', 'selling_required_appliance', 'table_size']",
+      "group": "preparation",
+      "name": "a preparation frame publishes the start-day checklist",
+      "passed": true
+    },
+    {
+      "detail": "captured=True, popups_open=3",
+      "group": "preparation",
+      "name": "an open popup captures input and flags an error",
+      "passed": true
+    },
+    {
+      "detail": "invalidated: a popup is open",
+      "group": "preparation",
+      "name": "consent is refused while a popup is open",
+      "passed": true
+    },
+    {
+      "detail": "[(4, 0), (4, 0)]",
+      "group": "preparation",
+      "name": "the controller clears the popup, starts the day and serves",
+      "passed": true
+    },
+    {
+      "detail": "after one press True, after two False",
+      "group": "preparation",
+      "name": "consent toggles rather than latching",
+      "passed": true
+    },
+    {
+      "detail": "681 samples of width 196",
+      "group": "learning",
+      "name": "a human recording yields aligned pairs",
+      "passed": true
+    },
+    {
+      "detail": "{0: 123, 1: 37, 2: 422, 3: 49, 4: 50}",
+      "group": "learning",
+      "name": "the human dataset carries real movement, not a constant",
+      "passed": true
+    },
+    {
+      "detail": "the golden trace has no demo_input frames",
+      "group": "learning",
+      "name": "an observation-only recording is refused, not silently empty",
+      "passed": true
+    },
+    {
+      "detail": "22 goal features",
+      "group": "learning",
+      "name": "a model dataset carries goals",
+      "passed": true
+    },
+    {
+      "detail": "218 inputs",
+      "group": "learning",
+      "name": "policy input is state then goal",
+      "passed": true
+    },
+    {
+      "detail": "overlap []",
+      "group": "learning",
+      "name": "the validation split shares no episode with training",
+      "passed": true
+    },
+    {
+      "detail": "5334 samples",
+      "group": "learning",
+      "name": "a dataset round-trips",
+      "passed": true
+    },
+    {
+      "detail": "1.0228 -> 0.7215",
+      "group": "learning",
+      "name": "training reduces the loss",
+      "passed": true
+    },
+    {
+      "detail": "7 heads",
+      "group": "learning",
+      "name": "scoring reports one entry per action head",
+      "passed": true
+    },
+    {
+      "detail": "[0, 0, 1, 0, 0, 0, 0]",
+      "group": "learning",
+      "name": "a policy round-trips to the same action",
+      "passed": true
+    },
+    {
+      "detail": "same action twice",
+      "group": "learning",
+      "name": "greedy action selection is deterministic",
+      "passed": true
+    },
+    {
+      "detail": "1.00 in [0.34, 1.00]",
+      "group": "learning",
+      "name": "the harness reports a day-completion interval",
+      "passed": true
+    },
+    {
+      "detail": "0",
+      "group": "learning",
+      "name": "the harness reports zero human interventions",
+      "passed": true
+    },
+    {
+      "detail": "best 4 versus median 4.0",
+      "group": "learning",
+      "name": "the harness separates the best episode from the typical",
+      "passed": true
+    },
+    {
+      "detail": "total reward -8.310 over 4 episodes, 0 served",
+      "group": "antihack",
+      "name": "idling never earns",
+      "passed": true
+    },
+    {
+      "detail": "total reward 0.000, 0 served",
+      "group": "antihack",
+      "name": "refusing to start the day earns nothing",
+      "passed": true
+    },
+    {
+      "detail": "total reward -8.310",
+      "group": "antihack",
+      "name": "holding Ready is not itself rewarded",
+      "passed": true
+    },
+    {
+      "detail": "reward terms ['REWARD_DAY_COMPLETE', 'REWARD_GROUP_LOST', 'REWARD_ITEM_RUINED', 'REWARD_ORDER', 'REWARD_TIME']",
+      "group": "antihack",
+      "name": "the reward has no proximity or approach term",
+      "passed": true
+    },
+    {
+      "detail": "total reward -8.310, n/a attempts",
+      "group": "antihack",
+      "name": "spamming interactions earns nothing",
+      "passed": true
+    },
+    {
+      "detail": "total reward -8.310",
+      "group": "antihack",
+      "name": "holding every input earns nothing",
+      "passed": true
+    },
+    {
+      "detail": "reward 0.000000",
+      "group": "antihack",
+      "name": "an unchanged frame pays nothing",
+      "passed": true
+    },
+    {
+      "detail": "reward 0.000000",
+      "group": "antihack",
+      "name": "money going backwards pays nothing",
+      "passed": true
+    },
+    {
+      "detail": "reference served 16, idle served 0",
+      "group": "antihack",
+      "name": "playing beats deliberately failing",
+      "passed": true
+    },
+    {
+      "detail": "total reward -8.310",
+      "group": "antihack",
+      "name": "camping accumulates nothing",
+      "passed": true
+    },
+    {
+      "detail": "reward -1.500 for three ruined items",
+      "group": "antihack",
+      "name": "ruining items is a cost, never a reward",
+      "passed": true
+    },
+    {
+      "detail": "reference served 16, random served 0",
+      "group": "antihack",
+      "name": "the baseline beats random by a clear margin",
+      "passed": true
+    },
+    {
+      "detail": "0.3.0",
+      "group": "manifest",
+      "name": "a manifest records the pinned build from the recording",
+      "passed": true
+    },
+    {
+      "detail": "10 schemas",
+      "group": "manifest",
+      "name": "a manifest records every schema version",
+      "passed": true
+    },
+    {
+      "detail": "23C141A83C320564",
+      "group": "manifest",
+      "name": "a manifest hashes its artifacts",
+      "passed": true
+    },
+    {
+      "detail": "offline: produced against mockgame and r",
+      "group": "manifest",
+      "name": "a manifest states its evidence class",
+      "passed": true
+    },
+    {
+      "detail": "['MATCH']",
+      "group": "manifest",
+      "name": "an unchanged artifact matches its manifest",
+      "passed": true
+    },
+    {
+      "detail": "['CHANGED']",
+      "group": "manifest",
+      "name": "a changed artifact is detected",
+      "passed": true
     }
   ],
   "failed": 0,
-  "total": 100
+  "total": 138
 }

@@ -8,3 +8,9 @@ __pycache__/
 # bin/ and staging-mod/ are deliberately tracked: the evidence ledger cites
 # the SHA-256 of the built and deployed DLL for each gate, and keeping the
 # binaries alongside those hashes lets a result be tied to an exact artifact.
+
+# Training datasets. Large, and exactly regenerable from a seed. The command
+# is in docs/learning-pipeline.md section 8, and the run manifest records the
+# sample count and every schema version, so the evidence survives without the
+# bytes. Policy checkpoints are small and stay tracked.
+runs/datasets/*.npz

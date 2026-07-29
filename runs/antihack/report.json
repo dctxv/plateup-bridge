@@ -1,0 +1,78 @@
+{
+  "checks": [
+    {
+      "detail": "total reward -8.310 over 4 episodes, 0 served",
+      "name": "idling never earns",
+      "passed": true
+    },
+    {
+      "detail": "total reward 0.000, 0 served",
+      "name": "refusing to start the day earns nothing",
+      "passed": true
+    },
+    {
+      "detail": "total reward -8.310",
+      "name": "holding Ready is not itself rewarded",
+      "passed": true
+    },
+    {
+      "detail": "reward terms ['REWARD_DAY_COMPLETE', 'REWARD_GROUP_LOST', 'REWARD_ITEM_RUINED', 'REWARD_ORDER', 'REWARD_TIME']",
+      "name": "the reward has no proximity or approach term",
+      "passed": true
+    },
+    {
+      "detail": "total reward -8.310, n/a attempts",
+      "name": "spamming interactions earns nothing",
+      "passed": true
+    },
+    {
+      "detail": "total reward -8.310",
+      "name": "holding every input earns nothing",
+      "passed": true
+    },
+    {
+      "detail": "reward 0.000000",
+      "name": "an unchanged frame pays nothing",
+      "passed": true
+    },
+    {
+      "detail": "reward 0.000000",
+      "name": "money going backwards pays nothing",
+      "passed": true
+    },
+    {
+      "detail": "reference served 16, idle served 0",
+      "name": "playing beats deliberately failing",
+      "passed": true
+    },
+    {
+      "detail": "total reward -8.310",
+      "name": "camping accumulates nothing",
+      "passed": true
+    },
+    {
+      "detail": "reward -1.500 for three ruined items",
+      "name": "ruining items is a cost, never a reward",
+      "passed": true
+    },
+    {
+      "detail": "reference served 16, random served 0",
+      "name": "the baseline beats random by a clear margin",
+      "passed": true
+    },
+    {
+      "detail": "requires the live Practice cycle; see verified-successes section 4.7",
+      "name": "Practice-only reset state: NOT TESTED offline",
+      "passed": false
+    },
+    {
+      "detail": "requires the live bridge's ack_command/cmds_applied counters",
+      "name": "duplicate command receipts: NOT TESTED offline",
+      "passed": false
+    }
+  ],
+  "closed": 12,
+  "note": "measured against mockgame, a model of PlateUp; the two OPEN items need the live bridge",
+  "schema": "antihack_0.1",
+  "total": 14
+}

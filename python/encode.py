@@ -31,11 +31,22 @@ import math
 import kitchen as K
 import steak as S
 
-VERSION = "encode_0.1"
+VERSION = "encode_0.2"
 
 MAX_HOBS = 4
 MAX_GROUPS = 4
 MAX_SINKS = 2
+
+# Egocentric occupancy patch, in tiles either side of the chef. A motor policy
+# cannot route around something it cannot see, and the first goal-conditioned
+# clone failed for exactly that reason: it knew where the sink was and nothing
+# about the counter between them.
+#
+# This is a fact, not an oracle. Specification section 6.2 lists the occupancy
+# layer and traversable tiles as part of the layout observation group, and
+# section 6.1 forbids computed *legality*, not the map. Every value here is
+# read from published appliance positions and layers.
+PATCH_RADIUS = 3
 
 # Held-item classes. Coarse on purpose: the policy needs to know what kind of
 # thing is in hand, not which of 420 items it is.
@@ -118,6 +129,10 @@ class Encoder:
         ]
         names += [f"held.{cls}" for cls in HELD_CLASSES]
         names += ["chef.facing_x", "chef.facing_z"]
+        span = range(-PATCH_RADIUS, PATCH_RADIUS + 1)
+        for dz in span:
+            for dx in span:
+                names.append(f"blocked.{dx:+d}.{dz:+d}")
         for index in range(self.max_hobs):
             names += [
                 f"hob{index}.present", f"hob{index}.occupied",
@@ -190,11 +205,31 @@ class Encoder:
         facing = K.facing_vector(rotation)
         vector += [facing[0], facing[1]]
 
+        vector += self._occupancy(ctx, position)
         vector += self._hobs(ctx, position)
         vector += self._sinks(ctx, position)
         vector += self._stock(ctx, position)
         vector += self._groups(ctx, position)
         return vector
+
+    def _occupancy(self, ctx, position):
+        """Which tiles around the chef are solid, in world axes.
+
+        Out-of-bounds counts as blocked: the chef cannot walk off the map
+        either, and a policy that treats the edge as open would push into it
+        the same way it pushes into a counter.
+        """
+        if position is None:
+            return [1.0] * ((2 * PATCH_RADIUS + 1) ** 2)
+        origin = K.tile_of(*position)
+        kitchen = ctx.kitchen
+        block = []
+        for dz in range(-PATCH_RADIUS, PATCH_RADIUS + 1):
+            for dx in range(-PATCH_RADIUS, PATCH_RADIUS + 1):
+                block.append(
+                    0.0 if kitchen.free((origin[0] + dx, origin[1] + dz))
+                    else 1.0)
+        return block
 
     def _hobs(self, ctx, position):
         chain = self.chain
@@ -325,3 +360,116 @@ class Encoder:
             name: round(value, 4)
             for name, value in zip(names, vector)
             if abs(value) > threshold}
+
+
+# --------------------------------------------------------------------------
+# goals
+# --------------------------------------------------------------------------
+
+# The option vocabulary a motor policy has to be able to execute. Order is
+# fixed because it becomes a one-hot slot; appending is safe, reordering is
+# not.
+GOAL_KINDS = (
+    "none", "navigate", "acquire", "place", "bin", "operate", "serve",
+    "watch_cook", "start_day", "dismiss_popup", "idle", "other",
+)
+
+
+class GoalEncoder:
+    """Encodes what the chef is currently trying to do.
+
+    Behaviour cloning from a hierarchical expert fails without this, and the
+    failure is not subtle: a policy cloned from the reference controller on
+    state alone reached 97% per-frame accuracy and served zero groups, because
+    two identical kitchens can call for opposite movements depending on which
+    appliance the planner picked. The target is not in the observation, so the
+    policy is being asked to guess an intention it cannot see.
+
+    Specification section 8.1 puts a goal-conditioned motor controller under
+    the task planner for exactly this reason, and section 10.3 step 2 makes
+    goal conditioning the second thing to do after cloning. The goal is the
+    interface between the two layers.
+
+    Nothing here is privileged information. The option kind is the agent's own
+    decision, and the target's position is already published; this is the
+    agent telling itself what it chose, not the bridge telling it what to do.
+    """
+
+    def __init__(self):
+        self._names = None
+
+    def field_names(self):
+        if self._names is not None:
+            return self._names
+        names = [f"goal.{kind}" for kind in GOAL_KINDS]
+        names += [
+            "goal.has_target", "goal.dx", "goal.dz", "goal.range",
+            "goal.in_reach", "goal.aim_x", "goal.aim_z",
+            "goal.stand_dx", "goal.stand_dz", "goal.at_stance",
+        ]
+        self._names = names
+        return names
+
+    @property
+    def size(self):
+        return len(self.field_names())
+
+    def encode(self, option, ctx):
+        kind = self.kind_of(option)
+        vector = one_hot(kind, GOAL_KINDS)
+
+        target = self._target(option, ctx)
+        position = ctx.position
+        if target is None or position is None:
+            return vector + [0.0] * 10
+
+        goal = (target["x"], target["z"])
+        span = math.hypot(goal[0] - position[0], goal[1] - position[1])
+        aim = K.normalise(goal[0] - position[0], goal[1] - position[1])
+        stand = getattr(option, "pose", None)
+        if stand is not None:
+            stand_dx = (stand.x - position[0]) / DISTANCE_SCALE
+            stand_dz = (stand.z - position[1]) / DISTANCE_SCALE
+            at_stance = 1.0 if math.hypot(
+                stand.x - position[0], stand.z - position[1]) <= 0.2 else 0.0
+        else:
+            stand_dx = stand_dz = at_stance = 0.0
+
+        return vector + [
+            1.0,
+            _clip((goal[0] - position[0]) / DISTANCE_SCALE),
+            _clip((goal[1] - position[1]) / DISTANCE_SCALE),
+            _clip(span / DISTANCE_SCALE, 0.0, 1.0),
+            1.0 if span <= K.MAX_REACH else 0.0,
+            aim[0], aim[1],
+            _clip(stand_dx), _clip(stand_dz), at_stance,
+        ]
+
+    @staticmethod
+    def kind_of(option):
+        if option is None:
+            return "none"
+        name = getattr(option, "name", "")
+        if name in GOAL_KINDS:
+            return name
+        # Composites are labelled by the child that is actually running, so a
+        # wash and a fetch do not collapse into one indistinguishable goal.
+        current = getattr(option, "current", None)
+        if current is not None:
+            return GoalEncoder.kind_of(current)
+        return "other"
+
+    @staticmethod
+    def _target(option, ctx):
+        if option is None:
+            return None
+        current = getattr(option, "current", None)
+        if current is not None:
+            return GoalEncoder._target(current, ctx)
+        slot = getattr(option, "slot", None)
+        if slot is not None:
+            return ctx.appliance_at(slot)
+        table_slot = getattr(option, "table_slot", None)
+        if table_slot is not None:
+            return ctx.appliance_at(table_slot)
+        return None

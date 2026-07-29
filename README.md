@@ -290,6 +290,12 @@ frame, never by hardcoded ID.
 | `python/env.py` | Gymnasium-compatible environment; gymnasium itself is optional |
 | `python/mockgame.py` | Tick-level **model** of the game, for running offline |
 | `python/facts.py` | Re-derives observation facts from the recorded artifacts |
+| `python/dataset.py` | Behaviour-cloning datasets, from demonstrations or the model |
+| `python/policy.py` | A goal-conditioned cloned policy; NumPy, no framework |
+| `python/dagger.py` | Labels the states the policy actually visits |
+| `python/evaluate.py` | The specification's metric set, with confidence intervals |
+| `python/antihack.py` | The specification's reward-hacking adversaries |
+| `python/manifest.py` | Run manifests: code, schemas, build and artifact hashes |
 | `python/selftest.py` | The offline gate over all of the above |
 
 `service.py` and the motor control in `options.py` are a **scripted baseline**,
@@ -297,6 +303,18 @@ not the agent. Specification §2.3 disallows scripted cook-plate-serve control
 and deterministic pathfinding inside a scored run. They exist to build training
 data, to measure the capability registry, and to be the baseline a learned
 policy is compared against.
+
+A learned motor policy runs under that planner and is measured against it. It
+completes the modelled day but serves fewer groups than the baseline, so the
+Phase G gate is **not** met. The measured progression and the eight findings
+that produced it are in
+[`docs/learning-pipeline.md`](docs/learning-pipeline.md), and the method-change
+decision the specification requires instead of a longer run is in
+[`docs/phase-g-decision.md`](docs/phase-g-decision.md).
+
+The split diagnostic is the load-bearing measurement: give the policy the
+buttons and a scripted route and it reaches parity; give it movement and
+scripted buttons and it does not. The gap is movement.
 
 The interaction model is worth stating once, because it drives everything:
 `AttemptInteraction` projects a point 0.7 units ahead along the **movement**
@@ -336,6 +354,24 @@ python python\env.py soak --steps 20000
 python python\surrogate.py compare runs\capability\mock-reference.json
 ```
 
+```powershell
+python python\antihack.py
+```
+
+Train and score a policy, all offline:
+
+```powershell
+python python\dataset.py model runs\datasets\reference-goal.npz --episodes 14
+```
+
+```powershell
+python python\policy.py train runs\datasets\reference-goal.npz runs\policies\bc-goal.npz
+```
+
+```powershell
+python python\evaluate.py compare runs\policies\bc-goal.npz --episodes 20
+```
+
 `mockgame` is a model built from the two recordings, not the game. A pass means
 the code is coherent and agrees with those recordings; it is not evidence about
 PlateUp, and every command above says so in its output.
@@ -356,10 +392,13 @@ Requires PlateUp in a restaurant with the mod loaded and F9 override on.
 2. Compare the live registry against `runs/capability/mock-reference.json`.
    That difference is the first honest measurement of how wrong the offline
    model is, and the surrogate's §9.4 validation depends on it.
-3. Replace the scripted layers: `Option._drive` and the press logic (motor),
-   then `SteakPlanner.choose` (task). Real-game motor training remains
-   restricted to 1x.
-4. Optionally run the recipe benchmark and replace the scope decision with a
+3. Close the Phase G motor gate. The learned policy completes the modelled day
+   but serves one group where the baseline serves four; the next steps in
+   priority order are in [`docs/learning-pipeline.md`](docs/learning-pipeline.md)
+   §7. Real-game motor training remains restricted to 1x.
+4. Train the task planner in the surrogate (§10.4), which is what removes the
+   remaining scripted half.
+5. Optionally run the recipe benchmark and replace the scope decision with a
    measurement.
 
 Still open: the 100,000-command formal soak remains FAIL/PENDING after one

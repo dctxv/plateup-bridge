@@ -98,7 +98,8 @@ class MockPlateUp:
     """Replays a recorded layout as a live world the agent can act in."""
 
     def __init__(self, path, cut="plain", seed=1, day_length=None,
-                 groups=None, plates=None, interval=None):
+                 groups=None, plates=None, interval=None,
+                 preparation=False, popup_seconds=0.0, randomise_start=False):
         self.path = path
         self.chain = S.Chain(cut)
         self.random = random.Random(seed)
@@ -114,6 +115,17 @@ class MockPlateUp:
         self.plate_capacity = plates
         self.arrival_interval = (
             ARRIVAL_INTERVAL if interval is None else interval)
+        # Preparation is the phase the live agent meets first, so the model
+        # can start there. Day 0 in both recordings published
+        # `start_day_warnings` with `players_not_ready` at Error and
+        # everything else Safe, and the block vanished the moment day 1 began.
+        self.start_in_preparation = bool(preparation)
+        self.popup_seconds = float(popup_seconds)
+        # Specification section 10.3 step 3: randomise the starting pose and
+        # held item. Without it every trajectory in a cloned dataset begins
+        # from the same spot with empty hands, and the policy has never seen
+        # the states it drifts into.
+        self.randomise_start = bool(randomise_start)
 
         self._next_entity = 100000
         self.reset()
@@ -171,6 +183,11 @@ class MockPlateUp:
         self.tick = 0
         self.clock = 0.0
         self.seconds = 0.0
+        self.phase = "preparation" if self.start_in_preparation else "service"
+        self.ready = False
+        self.ready_at = None
+        self.popup_until = (
+            self.popup_seconds if self.start_in_preparation else 0.0)
         self.money = 0
         self.lives = 1
         self.game_over = False
@@ -182,7 +199,9 @@ class MockPlateUp:
         self.groups = []
         self.pending_arrivals = []
         self.command_id = 0
-        self.previous_buttons = {"grab": BUTTON_UP, "interact": BUTTON_UP}
+        self.previous_buttons = {
+            "grab": BUTTON_UP, "interact": BUTTON_UP,
+            "ready": BUTTON_UP, "menu_cancel": BUTTON_UP}
 
         self.appliances = []
         for source in self.layout:
@@ -221,6 +240,8 @@ class MockPlateUp:
         self.player = {
             "x": 0.0, "z": 0.0, "rot": 0.0, "held": None, "id": 1}
         self._place_player()
+        if self.randomise_start:
+            self._randomise_start()
 
         arrival = FIRST_ARRIVAL
         for _ in range(self.total_groups):
@@ -230,6 +251,59 @@ class MockPlateUp:
             arrival += self.arrival_interval * self.random.uniform(0.9, 1.1)
 
         return self.observation()
+
+    def _randomise_start(self):
+        """Scatter the chef, what he is holding, and what is already cooking.
+
+        Everything placed here is reachable through normal play, so a policy
+        trained on it is not being shown an impossible world -- only a wider
+        slice of the possible one.
+        """
+        free = sorted(
+            tile for tile in self._free_tiles()
+            if abs(tile[0]) < 12 and abs(tile[1]) < 12)
+        if free:
+            tile = free[self.random.randrange(len(free))]
+            self.player["x"] = float(tile[0]) + self.random.uniform(-0.2, 0.2)
+            self.player["z"] = float(tile[1]) + self.random.uniform(-0.2, 0.2)
+        self.player["rot"] = self.random.uniform(0.0, 360.0)
+
+        roll = self.random.random()
+        if roll < 0.25:
+            self.player["held"] = self._new_item(self.chain.raw)
+        elif roll < 0.40:
+            self.player["held"] = self._new_item(self.chain.stages[0])
+        elif roll < 0.50:
+            self.player["held"] = self._new_item(S.CLEAN_PLATE)
+        elif roll < 0.58:
+            self.player["held"] = self._new_item("Plate - Dirty")
+
+        for hob in self.hobs:
+            if self.random.random() < 0.3:
+                stage = self.random.randrange(0, len(self.chain.stages) + 1)
+                item = self._new_item(self.chain.sequence[stage])
+                item.progress = self.random.random()
+                self.contents[hob["e"]] = item
+
+        surfaces = [
+            a for a in self.appliances
+            if "Countertop" in self._named(a)]
+        for surface in surfaces:
+            if self.random.random() < 0.2:
+                self.contents[surface["e"]] = self._new_item(
+                    self.chain.plated,
+                    components=[S.CLEAN_PLATE, self.chain.stages[0]])
+
+    def _free_tiles(self):
+        tiles = set()
+        for appliance in self.appliances:
+            origin = K.tile_of(appliance["x"], appliance["z"])
+            for dx in range(-1, 2):
+                for dz in range(-1, 2):
+                    tile = (origin[0] + dx, origin[1] + dz)
+                    if tile not in self.blocked:
+                        tiles.add(tile)
+        return tiles
 
     def _place_player(self):
         """Start on a free tile near the kitchen appliances."""
@@ -255,6 +329,11 @@ class MockPlateUp:
 
         self._move(action)
         buttons = self._edges(action)
+
+        if self.phase == "preparation":
+            self._advance_preparation(buttons)
+            return self.observation()
+
         if buttons["grab"] == BUTTON_PRESSED:
             self._grab(action)
         if buttons["interact"] in (BUTTON_PRESSED, BUTTON_HELD):
@@ -264,9 +343,35 @@ class MockPlateUp:
         self._advance_customers()
         return self.observation()
 
+    # -- preparation ------------------------------------------------------
+
+    def _advance_preparation(self, buttons):
+        """Day 0: clear any popup, take consent, then open the restaurant.
+
+        Consent toggles on the `Pressed` edge, matching the note in the
+        observation schema that `StartDayWarningView` toggles when
+        SecondaryAction1 is pressed. A controller that releases and presses
+        again therefore un-readies itself, which is worth modelling because it
+        is a mistake that would be invisible until a live run stalled.
+        """
+        if self.popup_until > 0.0:
+            if buttons["menu_cancel"] == BUTTON_PRESSED:
+                self.popup_until = 0.0
+            else:
+                self.popup_until = max(0.0, self.popup_until - FRAME_SECONDS)
+            return
+
+        if buttons["ready"] == BUTTON_PRESSED:
+            self.ready = not self.ready
+            self.ready_at = self.clock if self.ready else None
+
+        if self.ready and self.ready_at is not None and                 self.clock - self.ready_at >= 0.5:
+            self.phase = "service"
+            self.seconds = 0.0
+
     def _edges(self, action):
         state = {}
-        for name in ("grab", "interact"):
+        for name in ("grab", "interact", "ready", "menu_cancel"):
             down = bool(action.get(name))
             old = self.previous_buttons[name]
             if down:
@@ -687,7 +792,8 @@ class MockPlateUp:
             })
 
         held = self.player["held"]
-        return {
+        preparing = self.phase == "preparation"
+        frame = {
             "kind": "obs",
             "protocol": 1,
             "tick": self.tick,
@@ -695,7 +801,7 @@ class MockPlateUp:
             "practice_mode": False,
             "paused": False,
             "override": True,
-            "input_captured": False,
+            "input_captured": preparing and self.popup_until > 0.0,
             "ack_command": self.command_id,
             "cmds_applied": self.command_id,
             "cmds_dropped": 0,
@@ -703,10 +809,13 @@ class MockPlateUp:
             "game_speed": 1,
             "game_total_time": round(self.clock, 3),
             "real_total_time": round(self.clock, 3),
-            "day": 1,
-            "time_of_day": round(min(1.0, self.seconds / self.day_length), 3),
-            "time_unbounded": round(self.seconds / self.day_length, 3),
-            "seconds_elapsed": round(self.seconds, 3),
+            "day": 0 if preparing else 1,
+            "time_of_day": (
+                0 if preparing
+                else round(min(1.0, self.seconds / self.day_length), 3)),
+            "time_unbounded": (
+                0 if preparing else round(self.seconds / self.day_length, 3)),
+            "seconds_elapsed": 0 if preparing else round(self.seconds, 3),
             "day_length": self.day_length,
             "money": self.money,
             "lives": self.lives,
@@ -721,14 +830,35 @@ class MockPlateUp:
             }],
             "appliances": appliances,
             "loose_items": [],
-            "groups": groups,
-            "customers": customers,
+            "groups": [] if preparing else groups,
+            "customers": [] if preparing else customers,
         }
+        if preparing:
+            # Levels copied from the recorded day 0 checklist: everything Safe
+            # except consent, which is Error until given, and an open popup,
+            # which is Error while it is up.
+            frame["start_day_warnings"] = {
+                "players_ready": self.ready,
+                "popups_open": 3 if self.popup_until > 0.0 else 1,
+                "selling_required_appliance": 1,
+                "table_size": 1,
+                "players_not_ready": 1 if self.ready else 3,
+                "post_unopened": 1,
+                "more_than_one_table": 1,
+                "players_in_crane_mode": 1,
+            }
+        return frame
 
     # -- convenience ------------------------------------------------------
 
     @property
+    def in_preparation(self):
+        return self.phase == "preparation"
+
+    @property
     def day_finished(self):
+        if self.phase == "preparation":
+            return False
         return (
             self.seconds >= self.day_length
             and not self.pending_arrivals

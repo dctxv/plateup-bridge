@@ -73,12 +73,22 @@ MAX_AIM_RECOVERIES = 12
 # arrival error up to ARRIVE_TOLERANCE still lands inside this gate.
 PRESS_REACH = K.MAX_REACH - 0.12
 
+# `WarningLevel`, from the start-day checklist. Observed across both recorded
+# preparation phases: every warning sat at Safe except `players_not_ready`,
+# which is Error until the chef consents, and `popups_open`, which is Error
+# exactly while `input_captured` is true.
+WARNING_UNKNOWN = 0
+WARNING_SAFE = 1
+WARNING_WARNING = 2
+WARNING_ERROR = 3
+
 NEUTRAL = {
     "move": (0.0, 0.0),
     "grab": False,
     "interact": False,
     "stop": False,
     "ready": False,
+    "menu_cancel": False,
 }
 
 
@@ -179,6 +189,13 @@ class Option:
         self._history = []
         self._blocked_learned = set()
         self._aim_recoveries = 0
+        # When a learned policy supplies the primitive actions, this option's
+        # own motor attempts are advisory: its presses are never sent, so
+        # counting them against a give-up limit would end the option after a
+        # fraction of a second through no fault of the policy. Termination
+        # then rests on the success check and the timeout, which are both
+        # observation-based and belong to the option either way.
+        self.driven_externally = False
         # Whether to hold `StopMoving` while aiming.
         #
         # Off by default, which is what a human does: hold the direction, walk
@@ -262,7 +279,7 @@ class Option:
 
         if self._stuck(position):
             self._history.clear()
-            if not self._recover(ctx, position, waypoint):
+            if not self._recover(ctx, position, waypoint) and                     not self.driven_externally:
                 self.finish(FAILED, "blocked; no route after replanning")
                 return neutral()
             waypoint = self._next_waypoint(ctx, position, point)
@@ -352,7 +369,7 @@ class Option:
         if action is not None:
             return action
         self._aim_recoveries += 1
-        if self._aim_recoveries > MAX_AIM_RECOVERIES:
+        if self._aim_recoveries > MAX_AIM_RECOVERIES and                 not self.driven_externally:
             return self.finish(FAILED, "arrived but could not aim cleanly")
         self.route = None
         self.plan(ctx)
@@ -468,7 +485,7 @@ class TargetedOption(Option):
         if aim is None:
             return self._approach(ctx)
 
-        if self.presses >= MAX_PRESS_ATTEMPTS and self._press_settled():
+        if not self.driven_externally and                 self.presses >= MAX_PRESS_ATTEMPTS and self._press_settled():
             return self.finish(
                 FAILED,
                 f"{self.presses} presses at {self.target_name} changed nothing")
@@ -704,7 +721,7 @@ class ServeOrder(Option):
         if aim is None:
             return self._approach(ctx)
 
-        if self.presses >= MAX_PRESS_ATTEMPTS and self._press_settled():
+        if not self.driven_externally and                 self.presses >= MAX_PRESS_ATTEMPTS and self._press_settled():
             return self.finish(FAILED, f"{self.presses} presses, no delivery")
         return self._press_grab(ctx, aim)
 
@@ -716,6 +733,12 @@ class StartDay(Option):
     this is a held button rather than a menu confirm, and it must keep being
     sent while the view owns input, which is exactly when `controllable` is
     false. That is why this option overrides `act` instead of `run`.
+
+    Consent **toggles** on the `Pressed` edge. Holding the button produces one
+    edge and then `Held`, so one hold is one toggle; but releasing and pressing
+    again would toggle consent straight back off. Once `players_ready` reports
+    true the button is released and the option simply waits, which is both
+    safer and what the recorded human demonstrations do.
     """
 
     name = "start_day"
@@ -730,14 +753,68 @@ class StartDay(Option):
             return self.finish(TIMEOUT, "day did not start")
         if ctx.world.game_over:
             return self.finish(INVALID, "game over")
-        if ctx.world.start_day_warnings is None:
+
+        warnings = ctx.world.start_day_warnings
+        if warnings is None:
             if ctx.in_service:
                 return self.finish(SUCCESS, "service started")
             # Some other view owns the screen. Consent is only meaningful
             # while the start-day warning is up, and SecondaryAction1 means
             # something else to other popups, so wait rather than press.
             return neutral()
+
+        if warnings.get("popups_open", WARNING_SAFE) >= WARNING_WARNING:
+            # A modal popup is open. The game reports it as a start-day
+            # warning of its own, and consenting underneath it is not what the
+            # button would do. Let the planner clear it first.
+            return self.finish(INVALID, "a popup is open")
+
+        if warnings.get("players_ready"):
+            return neutral()
         return dict(neutral(), ready=True)
+
+
+class DismissPopup(Option):
+    """Close a modal popup with Cancel, and only with Cancel.
+
+    `SStartDayWarnings.PopupsOpen` goes to Error while a popup is up, and the
+    day will not start under it. In the recorded preparation phase that state
+    coincides exactly with `input_captured`, so the two agree.
+
+    Only `MenuCancel` is sent. `MenuSelect` would confirm whatever the popup is
+    offering, which during preparation can be a purchase or a card, and this
+    controller has no business making that choice: purchases and cards are
+    Project 3 scope. A popup that will not cancel is reported rather than
+    guessed at.
+    """
+
+    name = "dismiss_popup"
+    timeout = 15.0
+
+    # Roughly two-thirds of a second per press at the observed frame rate.
+    PRESS_TICKS = 4
+    CYCLE_TICKS = 20
+
+    def act(self, ctx):
+        if self.done:
+            return neutral()
+        self.ticks += 1
+        if self.started_clock is not None and ctx.clock and \
+                ctx.clock - self.started_clock > self.timeout:
+            return self.finish(
+                TIMEOUT, "a popup would not close with Cancel; it may need a "
+                         "choice this controller is not allowed to make")
+        if not self._popup_open(ctx):
+            return self.finish(SUCCESS, "popup closed")
+        pressing = (self.ticks % self.CYCLE_TICKS) < self.PRESS_TICKS
+        return dict(neutral(), menu_cancel=pressing)
+
+    @staticmethod
+    def _popup_open(ctx):
+        warnings = ctx.world.start_day_warnings or {}
+        if warnings.get("popups_open", WARNING_SAFE) >= WARNING_WARNING:
+            return True
+        return bool(ctx.world.input_captured)
 
 
 class Idle(Option):
@@ -843,7 +920,7 @@ class WatchCook(Option):
             # follows cannot pick up a neighbouring appliance's contents.
             return dict(neutral(), move=aim, stop=True)
 
-        if self.presses >= MAX_PRESS_ATTEMPTS and self._press_settled():
+        if not self.driven_externally and                 self.presses >= MAX_PRESS_ATTEMPTS and self._press_settled():
             return self.finish(FAILED, f"{self.presses} presses, nothing lifted")
         return self._press_grab(ctx, aim)
 
@@ -882,6 +959,7 @@ class Sequence(Option):
             option = factory(ctx)
             if option is None:
                 continue
+            option.driven_externally = self.driven_externally
             option.start(ctx)
             self.children.append(option)
             self.current = option

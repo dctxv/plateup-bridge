@@ -1,0 +1,116 @@
+{
+  "aggregate_states": 124984,
+  "history": [
+    {
+      "attempts": 4,
+      "days_completed": 4,
+      "label": "iteration 0 (behaviour cloning)",
+      "median_lost": 1.0,
+      "median_served": 1.0
+    },
+    {
+      "aggregate_states": 48006,
+      "attempts": 4,
+      "beta": 0.5,
+      "days_completed": 0,
+      "label": "iteration 1",
+      "median_lost": 1.0,
+      "median_served": 0.0,
+      "rollout_served": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "validation_accuracy": 0.989376327959005,
+      "validation_balanced": 0.9576344518945634
+    },
+    {
+      "aggregate_states": 58674,
+      "attempts": 4,
+      "beta": 0.25,
+      "days_completed": 0,
+      "label": "iteration 2",
+      "median_lost": 1.0,
+      "median_served": 0.0,
+      "rollout_served": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "validation_accuracy": 0.9790740443158892,
+      "validation_balanced": 0.8864160035234756
+    },
+    {
+      "aggregate_states": 74231,
+      "attempts": 4,
+      "beta": 0.125,
+      "days_completed": 0,
+      "label": "iteration 3",
+      "median_lost": 1.0,
+      "median_served": 0.0,
+      "rollout_served": [
+        4,
+        0,
+        4,
+        3
+      ],
+      "validation_accuracy": 0.984238577320692,
+      "validation_balanced": 0.92053737195583
+    },
+    {
+      "aggregate_states": 89962,
+      "attempts": 4,
+      "beta": 0.0625,
+      "days_completed": 0,
+      "label": "iteration 4",
+      "median_lost": 1.0,
+      "median_served": 0.0,
+      "rollout_served": [
+        1,
+        0,
+        2,
+        0
+      ],
+      "validation_accuracy": 0.8362241308062589,
+      "validation_balanced": 0.804247925729595
+    },
+    {
+      "aggregate_states": 107182,
+      "attempts": 4,
+      "beta": 0.03125,
+      "days_completed": 0,
+      "label": "iteration 5",
+      "median_lost": 1.0,
+      "median_served": 0.0,
+      "rollout_served": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "validation_accuracy": 0.9033221497554245,
+      "validation_balanced": 0.8307086422383276
+    },
+    {
+      "aggregate_states": 124984,
+      "attempts": 4,
+      "beta": 0.015625,
+      "days_completed": 0,
+      "label": "iteration 6",
+      "median_lost": 1.0,
+      "median_served": 0.0,
+      "rollout_served": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "validation_accuracy": 0.9827610834359991,
+      "validation_balanced": 0.875794037651086
+    }
+  ],
+  "schema": "dagger_0.1",
+  "selected_iteration": 0
+}

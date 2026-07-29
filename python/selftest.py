@@ -20,6 +20,10 @@ The suite is deliberately grouped so a failure names the layer that broke:
     capability   registry statistics and persistence
     surrogate    the semi-MDP against the model it was calibrated on
     env          the Gymnasium-compatible API and its reward rules
+    preparation  getting through day 0 and consenting to the day
+    learning     dataset construction, cloning, and the evaluation harness
+    antihack     the specification's reward-hacking tests
+    manifest     run manifests and their artifact re-check
 """
 
 import argparse
@@ -28,13 +32,18 @@ import os
 import sys
 import tempfile
 
+import antihack
 import capability
+import dataset as DATA
 import encode
 import env as ENV
+import evaluate as EVAL
 import facts
 import kitchen as K
+import manifest
 import mockgame
 import options as O
+import policy as POLICY
 import service
 import steak as S
 import surrogate as SUR
@@ -704,6 +713,190 @@ def test_env(suite):
 # --------------------------------------------------------------------------
 
 
+def test_preparation(suite):
+    suite.section("preparation")
+
+    game = mockgame.MockPlateUp(SMOKE, seed=3, preparation=True,
+                                popup_seconds=2.0)
+    client = ObservationClient(announce=False)
+    client.feed(game.dictionary)
+    world = client.feed(game.observation())
+    suite.check("a preparation frame publishes the start-day checklist",
+                world.start_day_warnings is not None and world.day == 0,
+                f"day {world.day}, warnings "
+                f"{sorted(world.start_day_warnings or {})}")
+    suite.check("an open popup captures input and flags an error",
+                world.input_captured
+                and world.start_day_warnings["popups_open"]
+                >= O.WARNING_WARNING,
+                f"captured={world.input_captured}, popups_open="
+                f"{world.start_day_warnings['popups_open']}")
+
+    # Consent must not be given underneath a popup.
+    ctx = O.Context(world, game.chain)
+    blocked = O.StartDay().start(ctx)
+    blocked.act(ctx)
+    suite.check("consent is refused while a popup is open",
+                blocked.status == O.INVALID,
+                f"{blocked.status}: {blocked.detail}")
+
+    boards = service.run_mock(
+        SMOKE, episodes=2, seed=3, verbose=False, preparation=True,
+        popup_seconds=2.0)
+    suite.check("the controller clears the popup, starts the day and serves",
+                all(board["served"] >= 4 and board["lost"] == 0
+                    for board in boards),
+                str([(board["served"], board["lost"]) for board in boards]))
+
+    # Consent toggles, so pressing twice must un-ready. The model reproduces
+    # that, and a controller that re-presses would stall the day forever.
+    game = mockgame.MockPlateUp(SMOKE, seed=3, preparation=True)
+    ready = ENV.decode_action(
+        ENV.encode_action({"move": (0.0, 0.0), "ready": True}))
+    idle = ENV.decode_action(ENV.encode_action({"move": (0.0, 0.0)}))
+    game.step(ready)
+    first = game.ready
+    game.step(idle)
+    game.step(ready)
+    suite.check("consent toggles rather than latching",
+                first and not game.ready,
+                f"after one press {first}, after two {game.ready}")
+
+
+def test_learning(suite):
+    suite.section("learning")
+
+    human = DATA.from_demonstration(SMOKE)
+    suite.check("a human recording yields aligned pairs",
+                len(human) > 100
+                and human.observations.shape[1] == len(
+                    encode.Encoder(S.Chain("plain")).field_names()),
+                f"{len(human)} samples of width "
+                f"{human.observations.shape[1]}")
+    suite.check("the human dataset carries real movement, not a constant",
+                len(human.head_distribution()[0]) > 1,
+                str(human.head_distribution()[0]))
+    suite.check("an observation-only recording is refused, not silently empty",
+                _raises(lambda: DATA.from_demonstration(GOLDEN), ValueError),
+                "the golden trace has no demo_input frames")
+
+    small = DATA.from_model(SMOKE, episodes=2, seed=500, verbose=False)
+    suite.check("a model dataset carries goals",
+                small.goal_conditioned
+                and small.goals.shape[1] == encode.GoalEncoder().size,
+                f"{small.goals.shape[1]} goal features")
+    suite.check("policy input is state then goal",
+                small.inputs.shape[1]
+                == small.observations.shape[1] + small.goals.shape[1],
+                f"{small.inputs.shape[1]} inputs")
+
+    training, validation = small.split(fraction=0.5, seed=0)
+    overlap = set(training.episodes.tolist()) & set(
+        validation.episodes.tolist())
+    suite.check("the validation split shares no episode with training",
+                not overlap, f"overlap {sorted(overlap)}")
+
+    with tempfile.TemporaryDirectory() as directory:
+        path = os.path.join(directory, "data.npz")
+        small.save(path)
+        reloaded = DATA.Dataset.load(path)
+        suite.check("a dataset round-trips",
+                    len(reloaded) == len(small)
+                    and reloaded.goals.shape == small.goals.shape,
+                    f"{len(reloaded)} samples")
+
+        policy = POLICY.ClonedPolicy(
+            small.inputs.shape[1], POLICY.head_sizes(), hidden=16, seed=0)
+        history = policy.fit(training, epochs=4, seed=0, verbose=False)
+        suite.check("training reduces the loss",
+                    history[-1]["loss"] < history[0]["loss"],
+                    f"{history[0]['loss']:.4f} -> {history[-1]['loss']:.4f}")
+
+        scores = policy.score(validation)
+        suite.check("scoring reports one entry per action head",
+                    len(scores["per_head"]) == len(POLICY.head_sizes()),
+                    f"{len(scores['per_head'])} heads")
+
+        checkpoint = os.path.join(directory, "policy.npz")
+        policy.save(checkpoint)
+        loaded = POLICY.ClonedPolicy.load(checkpoint)
+        sample = small.inputs[0]
+        suite.check("a policy round-trips to the same action",
+                    loaded.act(sample) == policy.act(sample),
+                    str(policy.act(sample)))
+        suite.check("greedy action selection is deterministic",
+                    policy.act(sample) == policy.act(sample),
+                    "same action twice")
+
+    results = EVAL.rollout_reference(layout=SMOKE, episodes=2, seed=77)
+    summary = EVAL.summarise(results)
+    completion = summary["day_completion"]
+    suite.check("the harness reports a day-completion interval",
+                completion["confidence_low"] <= completion["rate"]
+                <= completion["confidence_high"],
+                f"{completion['rate']:.2f} in "
+                f"[{completion['confidence_low']:.2f}, "
+                f"{completion['confidence_high']:.2f}]")
+    suite.check("the harness reports zero human interventions",
+                summary["human_interventions"] == 0, "0")
+    suite.check("the harness separates the best episode from the typical",
+                summary["best_episode"] is not None
+                and summary["best_episode"]["served"]
+                >= summary["served"]["median"],
+                f"best {summary['best_episode']['served']} versus median "
+                f"{summary['served']['median']}")
+
+
+def test_antihack(suite):
+    suite.section("antihack")
+    for entry in antihack.run_all(verbose=False):
+        if "NOT TESTED" in entry["name"]:
+            continue
+        suite.check(entry["name"], entry["passed"], entry["detail"])
+
+
+def test_manifest(suite):
+    suite.section("manifest")
+    payload = manifest.build(
+        artifacts=[SMOKE], recording=SMOKE, note="selftest",
+        scenario="offline")
+    suite.check("a manifest records the pinned build from the recording",
+                payload["pinned_build"]["game_version"] == "1.4.3-FF8F"
+                and payload["pinned_build"]["mod_hash"],
+                payload["pinned_build"]["bridge_version"])
+    suite.check("a manifest records every schema version",
+                all(payload["schemas"].values())
+                and payload["schemas"]["encode_schema"] == encode.VERSION,
+                f"{len(payload['schemas'])} schemas")
+    suite.check("a manifest hashes its artifacts",
+                len(payload["artifacts"][0]["sha256"]) == 64,
+                payload["artifacts"][0]["sha256"][:16])
+    suite.check("a manifest states its evidence class",
+                "offline" in payload["evidence_class"],
+                payload["evidence_class"][:40])
+
+    with tempfile.TemporaryDirectory() as directory:
+        path = os.path.join(directory, "manifest.json")
+        copy = os.path.join(directory, "artifact.txt")
+        with open(copy, "w", encoding="utf-8") as handle:
+            handle.write("original")
+        written = manifest.build(artifacts=[copy], recording=SMOKE)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(written, handle)
+
+        _payload, results = manifest.check(path)
+        suite.check("an unchanged artifact matches its manifest",
+                    all(status == "MATCH" for _t, status, _d in results),
+                    str([status for _t, status, _d in results]))
+
+        with open(copy, "w", encoding="utf-8") as handle:
+            handle.write("tampered")
+        _payload, results = manifest.check(path)
+        suite.check("a changed artifact is detected",
+                    any(status == "CHANGED" for _t, status, _d in results),
+                    str([status for _t, status, _d in results]))
+
+
 GROUPS = (
     ("facts", test_facts),
     ("geometry", test_geometry),
@@ -714,6 +907,10 @@ GROUPS = (
     ("capability", test_capability),
     ("surrogate", test_surrogate),
     ("env", test_env),
+    ("preparation", test_preparation),
+    ("learning", test_learning),
+    ("antihack", test_antihack),
+    ("manifest", test_manifest),
 )
 
 

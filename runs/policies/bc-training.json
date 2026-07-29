@@ -1,0 +1,253 @@
+{
+  "history": [
+    {
+      "epoch": 0,
+      "loss": 0.4774419595045325,
+      "validation_accuracy": 0.876943953434392,
+      "validation_balanced": 0.9108795453085407
+    },
+    {
+      "epoch": 1,
+      "loss": 0.22987778496989142,
+      "validation_accuracy": 0.927169818058457,
+      "validation_balanced": 0.9406299448026455
+    },
+    {
+      "epoch": 2,
+      "loss": 0.17280511367452112,
+      "validation_accuracy": 0.9358651597121789,
+      "validation_balanced": 0.948121253938762
+    },
+    {
+      "epoch": 3,
+      "loss": 0.1453462078365722,
+      "validation_accuracy": 0.9441498384130556,
+      "validation_balanced": 0.9569505406134364
+    },
+    {
+      "epoch": 4,
+      "loss": 0.12870542215560563,
+      "validation_accuracy": 0.9468994947060188,
+      "validation_balanced": 0.9586938122669428
+    },
+    {
+      "epoch": 5,
+      "loss": 0.11682788552903368,
+      "validation_accuracy": 0.9539700394593533,
+      "validation_balanced": 0.9624841066517332
+    },
+    {
+      "epoch": 6,
+      "loss": 0.10857395709909115,
+      "validation_accuracy": 0.9572196332601282,
+      "validation_balanced": 0.9654170550316049
+    },
+    {
+      "epoch": 7,
+      "loss": 0.10171891278155118,
+      "validation_accuracy": 0.9604692270609031,
+      "validation_balanced": 0.965589131988548
+    },
+    {
+      "epoch": 8,
+      "loss": 0.09669732489873428,
+      "validation_accuracy": 0.9644330173014087,
+      "validation_balanced": 0.9682840300824448
+    },
+    {
+      "epoch": 9,
+      "loss": 0.09235859730491526,
+      "validation_accuracy": 0.9640580641705502,
+      "validation_balanced": 0.9680141356752229
+    },
+    {
+      "epoch": 10,
+      "loss": 0.08878943877099732,
+      "validation_accuracy": 0.9659685396468298,
+      "validation_balanced": 0.9701495921790327
+    },
+    {
+      "epoch": 11,
+      "loss": 0.08550305809232014,
+      "validation_accuracy": 0.9668077204635134,
+      "validation_balanced": 0.9715551245674093
+    },
+    {
+      "epoch": 12,
+      "loss": 0.08242667672089579,
+      "validation_accuracy": 0.9676290463692039,
+      "validation_balanced": 0.9717425399380576
+    },
+    {
+      "epoch": 13,
+      "loss": 0.0806552367889474,
+      "validation_accuracy": 0.9678790151231096,
+      "validation_balanced": 0.9715321388426033
+    },
+    {
+      "epoch": 14,
+      "loss": 0.07821906012103003,
+      "validation_accuracy": 0.9676469012801971,
+      "validation_balanced": 0.9709264941767971
+    },
+    {
+      "epoch": 15,
+      "loss": 0.07668889284620249,
+      "validation_accuracy": 0.9694681022015106,
+      "validation_balanced": 0.9731027752287111
+    },
+    {
+      "epoch": 16,
+      "loss": 0.0744288239062815,
+      "validation_accuracy": 0.9704679772171335,
+      "validation_balanced": 0.9737829838282405
+    },
+    {
+      "epoch": 17,
+      "loss": 0.07295577123387258,
+      "validation_accuracy": 0.9708607852589856,
+      "validation_balanced": 0.9737670022980904
+    },
+    {
+      "epoch": 18,
+      "loss": 0.07245782145478319,
+      "validation_accuracy": 0.9702180084632277,
+      "validation_balanced": 0.9734684334901612
+    },
+    {
+      "epoch": 19,
+      "loss": 0.07046127778629653,
+      "validation_accuracy": 0.971628546431696,
+      "validation_balanced": 0.9750601421806929
+    },
+    {
+      "epoch": 20,
+      "loss": 0.06955740448775077,
+      "validation_accuracy": 0.9720749192065278,
+      "validation_balanced": 0.9757712126881941
+    },
+    {
+      "epoch": 21,
+      "loss": 0.06822182042470881,
+      "validation_accuracy": 0.9717713857196423,
+      "validation_balanced": 0.9756376143505248
+    },
+    {
+      "epoch": 22,
+      "loss": 0.06749614816983865,
+      "validation_accuracy": 0.9727891156462585,
+      "validation_balanced": 0.9766555443514056
+    },
+    {
+      "epoch": 23,
+      "loss": 0.06616473899573608,
+      "validation_accuracy": 0.9723070330494402,
+      "validation_balanced": 0.9753930294900733
+    },
+    {
+      "epoch": 24,
+      "loss": 0.0657021329703309,
+      "validation_accuracy": 0.9724855821593729,
+      "validation_balanced": 0.9761361928998659
+    }
+  ],
+  "manifest": {
+    "act_schema": "env_0.2",
+    "balanced": true,
+    "dataset_schema": "dataset_0.1",
+    "dataset_source": "model",
+    "epochs": 25,
+    "final_loss": 0.0657021329703309,
+    "hidden": 128,
+    "obs_schema": "encode_0.1",
+    "seconds": 6.5,
+    "trained_from": "runs\\datasets\\reference.npz",
+    "training_samples": 24003,
+    "validation_samples": 8001,
+    "warning": "recorded against mockgame, a model of PlateUp. A policy cloned from this has learned the model."
+  },
+  "training": {
+    "mean_accuracy": 0.9734080858940252,
+    "mean_balanced": 0.9764408724884545,
+    "per_head": [
+      {
+        "accuracy": 0.9334249885430987,
+        "balanced_accuracy": 0.9625653761785051,
+        "classes_present": 5
+      },
+      {
+        "accuracy": 0.9316752072657585,
+        "balanced_accuracy": 0.8987009499542898,
+        "classes_present": 5
+      },
+      {
+        "accuracy": 0.9502145565137691,
+        "balanced_accuracy": 0.9746306046195652,
+        "classes_present": 2
+      },
+      {
+        "accuracy": 0.9985418489355498,
+        "balanced_accuracy": 0.999189176666821,
+        "classes_present": 2
+      },
+      {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "classes_present": 1
+      },
+      {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "classes_present": 1
+      },
+      {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "classes_present": 1
+      }
+    ],
+    "samples": 24003
+  },
+  "validation": {
+    "mean_accuracy": 0.9724855821593729,
+    "mean_balanced": 0.9761361928998659,
+    "per_head": [
+      {
+        "accuracy": 0.930758655168104,
+        "balanced_accuracy": 0.9618310640053199,
+        "classes_present": 5
+      },
+      {
+        "accuracy": 0.9291338582677166,
+        "balanced_accuracy": 0.8979767476559599,
+        "classes_present": 5
+      },
+      {
+        "accuracy": 0.9490063742032246,
+        "balanced_accuracy": 0.9739862280030605,
+        "classes_present": 2
+      },
+      {
+        "accuracy": 0.9985001874765654,
+        "balanced_accuracy": 0.9991593106347205,
+        "classes_present": 2
+      },
+      {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "classes_present": 1
+      },
+      {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "classes_present": 1
+      },
+      {
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "classes_present": 1
+      }
+    ],
+    "samples": 8001
+  }
+}

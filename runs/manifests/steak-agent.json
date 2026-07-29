@@ -1,0 +1,139 @@
+{
+  "artifacts": [
+    {
+      "bytes": 23517,
+      "path": "runs\\selftest\\offline-gate.json",
+      "sha256": "53924E5436A3240CB00B7205F5CDB9AF39C401FC5E288BDB8198A39EA3FBF231"
+    },
+    {
+      "bytes": 10942,
+      "path": "runs\\facts\\observation-facts.json",
+      "sha256": "9685E7C7F1693CA6380BC78C3F416320F64E98519485F54F0336FA22A6435D56"
+    },
+    {
+      "bytes": 2307,
+      "path": "runs\\antihack\\report.json",
+      "sha256": "561531F79B35B39D80D23CAABBE052D52DC4F26CCBB2682C65A4E9A447FE4C9D"
+    },
+    {
+      "bytes": 8176,
+      "path": "runs\\capability\\mock-reference.json",
+      "sha256": "6553C0F480373D95C43D5CE503C083C95B64E1FD4C6EB83AAB764C7F180484E0"
+    },
+    {
+      "bytes": 4181,
+      "path": "runs\\benchmark\\mock-episodes.json",
+      "sha256": "3BD0BB9EB8E87A0D03E7BF89057C926EA44161838ED84F922E8BA5228D6B8EA5"
+    },
+    {
+      "bytes": 1054,
+      "path": "runs\\benchmark\\mock-sweep.txt",
+      "sha256": "503965BCE62C935F617A61A1562186C88E85570E63AA3BD0599B9A6FF6F6FE33"
+    },
+    {
+      "bytes": 7605,
+      "path": "runs\\benchmark\\policy-comparison.json",
+      "sha256": "B468CD75028DDA99FD8F448C1CBC2B50FBA5D3C777510801E4A6F770F602FB05"
+    },
+    {
+      "bytes": 11252,
+      "path": "runs\\benchmark\\policy-split.json",
+      "sha256": "166CB18B6D3781789A6E64CB6BEF1B0724DFAA1B7A576390EC3CDA507EA745B4"
+    },
+    {
+      "bytes": 1314,
+      "path": "runs\\benchmark\\surrogate-vs-model.json",
+      "sha256": "27B9FCBB86B80936291E49B1A3C45F8865100C19E5E94006A6F9E35393124365"
+    },
+    {
+      "bytes": 161,
+      "path": "runs\\env\\random-soak.json",
+      "sha256": "7C3F0DE268F823596D6FB4C69A6E77BB0D3A802BAB39952A2E2343F28F47E7EC"
+    },
+    {
+      "bytes": 214904,
+      "path": "runs\\policies\\bc-goal.npz",
+      "sha256": "32A79EA003FD45938C872875FDB2ECDA23024C7E826A1C516BDA82D57195C2DE"
+    },
+    {
+      "bytes": 10990,
+      "path": "runs\\policies\\bc-goal-training.json",
+      "sha256": "C509BB7249E9E936FE022F81BD2185B2859098C767F6833A0AA4ECF014684712"
+    },
+    {
+      "bytes": 935,
+      "path": "runs\\policies\\assist-sweep.json",
+      "sha256": "817D7158649BDF1DF5E964052A3E7FA699A2941BC38DF2E4E5B43133DDA03174"
+    },
+    {
+      "bytes": 2626,
+      "path": "runs\\policies\\dagger-goal-history.json",
+      "sha256": "1B3BA668E2DE0E9F178CA55D27356AE39116C9785654E1A979895A566BC60004"
+    }
+  ],
+  "code": {
+    "branch": "main",
+    "commit": "277b867ec5ff3fd715c4620ef494aada1a39a32f",
+    "dirty": true,
+    "dirty_files": [
+      ".gitignore",
+      "README.md",
+      "docs/agent-architecture.md",
+      "docs/learning-pipeline.md",
+      "docs/phase-g-decision.md",
+      "docs/verified-successes.md",
+      "python/antihack.py",
+      "python/dagger.py",
+      "python/dataset.py",
+      "python/encode.py",
+      "python/env.py",
+      "python/evaluate.py",
+      "python/manifest.py",
+      "python/mockgame.py",
+      "python/options.py",
+      "python/policy.py",
+      "python/selftest.py",
+      "python/service.py",
+      "runs/antihack/",
+      "runs/benchmark/policy-comparison.json",
+      "runs/benchmark/policy-split.json",
+      "runs/capability/mock-reference.json",
+      "runs/env/random-soak.json",
+      "runs/manifests/",
+      "runs/policies/",
+      "runs/selftest/offline-gate.json"
+    ]
+  },
+  "dependencies": {
+    "gymnasium": null,
+    "numpy": "2.4.2",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.10",
+    "win32file": "present"
+  },
+  "evidence_class": "offline: produced against mockgame and recorded artifacts, not the live game",
+  "note": "Steak agent: offline gate, learning pipeline, and the Phase G decision",
+  "pinned_build": {
+    "bridge_version": "0.3.0",
+    "game_version": "1.4.3-FF8F",
+    "mod_hash": "164a7ae4f2c796e3db0d7d8f7622daae49450ad515ef0319e320f214996af8d0",
+    "protocol": 1,
+    "source": "runs\\demos\\smoke.jsonl",
+    "unity": "2020.3.48f1"
+  },
+  "scenario": "steak day 1, recorded layout, mockgame",
+  "schema": "manifest_0.1",
+  "schemas": {
+    "act_schema": "act_0.1",
+    "capability_schema": "capability_0.1",
+    "dataset_schema": "dataset_0.1",
+    "demo_schema": "demo_0.1",
+    "encode_schema": "encode_0.2",
+    "env_schema": "env_0.2",
+    "evaluate_schema": "evaluate_0.1",
+    "manifest_schema": "manifest_0.1",
+    "obs_schema": "obs_0.1",
+    "policy_schema": "policy_0.1"
+  },
+  "written_at": "2026-07-30T02:06:23"
+}

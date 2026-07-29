@@ -18,9 +18,10 @@ small compatible shim stands in, so the environment can be exercised offline
 before any dependency is added. The API surface is the same either way.
 
 Action space, from specification section 7.1: per-axis movement discretised to
-five values each, plus contextual Grab, Interact, StopMoving and Ready as
-independent held-down bits. There is no separate drop or throw, because the
-game has none: placement is contextual.
+five values each, plus contextual Grab, Interact, StopMoving, Ready and
+MenuCancel as independent held-down bits. There is no separate drop or throw,
+because the game has none: placement is contextual. There is no MenuSelect
+either, on purpose -- see BUTTONS below.
 
 Reward, from specification section 11: bounded and event-based. An order
 satisfied pays, a group lost and an item ruined cost, and elapsed time costs a
@@ -42,10 +43,17 @@ import options as O
 import steak as S
 from observe import ObservationClient
 
-VERSION = "env_0.1"
+VERSION = "env_0.2"
 
 MOVE_VALUES = (-1.0, -0.5, 0.0, 0.5, 1.0)
-BUTTONS = ("grab", "interact", "stop", "ready")
+
+# `menu_cancel` is in the space and `menu_select` deliberately is not. Cancel
+# can only dismiss a popup, which is something a Day 1 run has to be able to
+# do for itself. Select would confirm whatever the popup offers, which during
+# preparation can be a purchase or a card -- Project 3 scope. An interface that
+# cannot express a choice cannot make it by accident, and a run that meets a
+# popup needing Select stops and says so.
+BUTTONS = ("grab", "interact", "stop", "ready", "menu_cancel")
 
 # Event rewards. The scale is set by the order reward so the primary outcome
 # dominates every intermediate term.
@@ -440,15 +448,18 @@ def check(layout, steps=400):
     verify("sampled action is inside the action space",
            env.action_space.contains(list(sample)), str(sample))
 
-    fields = decode_action([0, 4, 1, 0, 1, 0])
+    fields = decode_action([0, 4, 1, 0, 1, 0, 0])
     verify("action decoding maps axes and buttons",
            fields["move"] == (-1.0, 1.0) and fields["grab"]
            and not fields["interact"] and fields["stop"]
-           and not fields["ready"],
+           and not fields["ready"] and not fields["menu_cancel"],
            str(fields))
     verify("action encoding round-trips",
            decode_action(encode_action(fields)) == fields,
            str(encode_action(fields)))
+    verify("the action space cannot express MenuSelect",
+           "menu_select" not in BUTTONS and "menu_select" not in fields,
+           f"buttons {BUTTONS}")
 
     lengths = {len(observation)}
     rewards = []

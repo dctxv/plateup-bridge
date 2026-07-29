@@ -1,7 +1,7 @@
 {
   "episodes": 4,
   "observation_lengths": [
-    147
+    196
   ],
   "steps": 20000,
   "terminal_reasons": {

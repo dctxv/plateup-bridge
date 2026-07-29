@@ -3,8 +3,9 @@
 **Status:** implemented and passing the offline gate; **no live-game run yet**
 **Pinned game:** PlateUp `1.4.3-FF8F`
 **Bridge:** `0.3.0`
-**Schemas:** `obs_0.1` / `act_0.1` / `demo_0.1` / `encode_0.1` /
-`capability_0.1` / `env_0.1`
+**Schemas:** `obs_0.1` / `act_0.1` / `demo_0.1` / `encode_0.2` /
+`capability_0.1` / `env_0.2` / `dataset_0.1` / `policy_0.1` / `dagger_0.1` /
+`evaluate_0.1` / `manifest_0.1`
 
 This describes the layers between the bridge and a policy, what each one is
 allowed to claim, and where the scripted parts stop and the learned parts have
@@ -33,8 +34,16 @@ tick-level model of the game                                PlateUp + the mod
         |                                                             |
 python/capability.py  option durations and failure rates, measured
 python/surrogate.py   semi-MDP over options, calibrated from the registry
-python/encode.py      fixed-size observation vector
+python/encode.py      fixed-size observation vector, and the goal encoding
 python/env.py         Gymnasium-compatible environment, both backends
+                                       |
+python/dataset.py     (state, goal, action) tuples from demonstrations or the
+                      model
+python/policy.py      goal-conditioned cloned policy, NumPy only
+python/dagger.py      labels at the states the policy actually reaches
+python/evaluate.py    the specification's metric set, with intervals
+python/antihack.py    the specification's reward-hacking adversaries
+python/manifest.py    run manifests: code, schemas, build, artifact hashes
 python/selftest.py    the offline gate over all of it
 ```
 
@@ -65,6 +74,15 @@ Replacing them with a policy means replacing two things: `Option._drive` and
 the press logic (the motor layer), and `SteakPlanner.choose` (the task layer).
 Everything else — the recipe graph, the geometry, the option boundaries, the
 registry, the environment — stays.
+
+**The motor half is now done and measured.**
+`evaluate.rollout_goal_policy` runs the scripted planner over a learned motor
+policy: the planner chooses options and decides when they end, and every
+movement axis and every button on every tick comes from the policy. It
+completes the modelled day but serves one group where the baseline serves four,
+so the Phase G gate is not met. The measured progression and the four findings
+behind it are in [`learning-pipeline.md`](learning-pipeline.md). The task half
+is still scripted; specification section 10.4 trains it in the surrogate.
 
 ### 2.1 What the baseline manages, on the model
 
@@ -175,14 +193,18 @@ cooking time twice, so a lift is priced from the `acquire` row instead.
 
 ## 7. Environment
 
-`env_0.1` exposes a Gymnasium-compatible API over either backend. Gymnasium
+`env_0.2` exposes a Gymnasium-compatible API over either backend. Gymnasium
 itself is optional: its spaces are used when installed and a compatible shim
 stands in when not, so nothing here needs a dependency added before it can be
 exercised.
 
 Action space is specification section 7.1's baseline: per-axis movement
-discretised to five values each, plus Grab, Interact, StopMoving and Ready as
-independent held bits. There is no drop or throw because the game has none.
+discretised to five values each, plus Grab, Interact, StopMoving, Ready and
+MenuCancel as independent held bits. There is no drop or throw because the game
+has none, and there is no MenuSelect on purpose: Cancel can only dismiss a
+popup, whereas Select would confirm whatever it offers, which during
+preparation can be a purchase or a card. Those are Project 3 scope, and an
+interface that cannot express the choice cannot make it by accident.
 
 Reward is bounded and event-based, per section 11: an order paid for earns, a
 lost life and a ruined item cost, and elapsed time costs a little. There is
@@ -227,6 +249,28 @@ Live, once PlateUp is running with the mod and F9 is on:
 python python\service.py run --capability runs\capability\live.json
 ```
 
+## 9A. Preparation
+
+The first thing a live run meets is day 0, not service. `start_day_warnings` is
+published exactly during preparation — 378 frames on day 0 in the golden trace,
+123 in the smoke recording, and gone the instant day 1 begins — with
+`players_not_ready` at Error until the chef consents and everything else at
+Safe.
+
+Two details that would each have cost a live session to find:
+
+- **Consent toggles on the `Pressed` edge.** Holding the button is one toggle;
+  releasing and pressing again turns consent back off. `StartDay` releases once
+  `players_ready` reports true rather than continuing to hold.
+- **The day will not start under an open popup.** `popups_open` goes to Error
+  exactly while `input_captured` is true, so `DismissPopup` clears it first —
+  with `MenuCancel` only. Cancel can dismiss; Select would confirm.
+
+The other warnings are read and reported but not acted on. Rearranging the
+restaurant is Project 2 and choosing from a popup is Project 3, and a
+controller that improvises outside its remit is worse than one that stops and
+says what it found.
+
 ## 10. What has to happen before any of this is a result
 
 1. A live run of `service.py run` inside Practice, with the capability registry
@@ -236,7 +280,8 @@ python python\service.py run --capability runs\capability\live.json
 3. Re-running the surrogate against the real registry, which is what
    specification section 9.4 actually asks for.
 4. The 100,000-command soak, still FAIL/PENDING after one 600-frame position
-   freeze, before any unattended run.
+   freeze, before any unattended run. Two of the section 11.3 reward-hacking
+   checks are also live-only and are marked OPEN rather than passing.
 
 Until step 1, the correct description of this work is: **built, internally
 consistent, and unverified in the game.**

@@ -278,9 +278,27 @@ class SteakPlanner:
         return O.Idle(0.4)
 
     def _rule_start_day(self, ctx):
-        if ctx.world.start_day_warnings is not None:
-            return O.StartDay()
-        return None
+        """Get through preparation and consent to the day starting.
+
+        Preparation is exactly the phase where `start_day_warnings` is
+        published: it appeared on day 0 in both recordings and vanished the
+        moment day 1 began. A modal popup is cleared first, because the day
+        will not start under one.
+
+        The other warnings are read but not acted on. In both recorded
+        preparation phases everything except `players_not_ready` sat at Safe,
+        and the two that could go wrong here (rearranging the restaurant and
+        choosing from a popup) are Project 2 and Project 3 scope. Reporting
+        them beats a controller that improvises outside its remit.
+        """
+        warnings = ctx.world.start_day_warnings
+        if warnings is None:
+            if ctx.world.input_captured:
+                return O.DismissPopup()
+            return None
+        if warnings.get("popups_open", O.WARNING_SAFE) >= O.WARNING_WARNING:
+            return O.DismissPopup()
+        return O.StartDay()
 
     def _rule_dump_waste(self, ctx):
         held = ctx.held_name
@@ -476,11 +494,15 @@ class Runner:
     tell them apart, which is the point: what runs offline is what runs live.
     """
 
-    def __init__(self, planner, chain, registry=None, verbose=False):
+    def __init__(self, planner, chain, registry=None, verbose=False,
+                 driven_externally=False):
         self.planner = planner
         self.chain = chain
         self.registry = registry
         self.verbose = verbose
+        # Set when a learned policy supplies the primitive actions and this
+        # runner only chooses and terminates options.
+        self.driven_externally = driven_externally
         self.option = None
         self.blocked = set()
         self.history = []
@@ -489,7 +511,9 @@ class Runner:
     def act(self, ctx):
         if self.option is None or self.option.done:
             self._retire(ctx)
-            self.option = self.planner.choose(ctx).start(ctx)
+            self.option = self.planner.choose(ctx)
+            self.option.driven_externally = self.driven_externally
+            self.option.start(ctx)
             if self.verbose:
                 print(f"  t={ctx.tick} {self.planner.last_reason} -> "
                       f"{self.option.name}")
@@ -547,7 +571,8 @@ class Runner:
 
 def run_mock(path, episodes=1, seed=1, min_stage=1, verbose=False,
              registry=None, max_seconds=400.0, plates=None, groups=None,
-             day_length=None, interval=None, watch_hob=False):
+             day_length=None, interval=None, watch_hob=False,
+             preparation=False, popup_seconds=0.0):
     """Play whole days against the model. Offline; nothing here is evidence."""
     import mockgame
 
@@ -555,7 +580,8 @@ def run_mock(path, episodes=1, seed=1, min_stage=1, verbose=False,
     for episode in range(episodes):
         game = mockgame.MockPlateUp(
             path, seed=seed + episode, plates=plates, groups=groups,
-            day_length=day_length, interval=interval)
+            day_length=day_length, interval=interval,
+            preparation=preparation, popup_seconds=popup_seconds)
         client = ObservationClient(announce=False)
         client.feed(game.dictionary)
         chain = game.chain
@@ -692,6 +718,9 @@ def main():
     mock.add_argument("--day-length", type=float, dest="day_length")
     mock.add_argument("--interval", type=float)
     mock.add_argument("--watch-hob", action="store_true", dest="watch_hob")
+    mock.add_argument("--preparation", action="store_true")
+    mock.add_argument("--popup-seconds", type=float, default=0.0,
+                      dest="popup_seconds")
     mock.add_argument("--capability")
     mock.add_argument("--json", dest="json_path")
     mock.add_argument("--quiet", action="store_true")
@@ -714,7 +743,8 @@ def main():
             min_stage=args.min_stage, verbose=not args.quiet,
             registry=registry, plates=args.plates, groups=args.groups,
             day_length=args.day_length, interval=args.interval,
-            watch_hob=args.watch_hob)
+            watch_hob=args.watch_hob, preparation=args.preparation,
+            popup_seconds=args.popup_seconds)
         print()
         for board in results:
             print(f"episode {board['episode']}: served {board['served']}, "
@@ -736,7 +766,8 @@ def main():
         controller="reference_v1", source="live")
     run_live(min_stage=args.min_stage, registry=registry,
              max_minutes=args.minutes, force_cut=args.cut,
-             watch_hob=args.watch_hob)
+             watch_hob=args.watch_hob, preparation=args.preparation,
+            popup_seconds=args.popup_seconds)
     print(registry.report())
     if args.capability:
         print("\nwrote " + registry.save(args.capability))

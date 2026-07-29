@@ -1,0 +1,51 @@
+[
+  {
+    "days_completed": 0,
+    "episodes": 3,
+    "expert_fraction": 0.0,
+    "median_lost": 1,
+    "median_served": 0
+  },
+  {
+    "days_completed": 0,
+    "episodes": 3,
+    "expert_fraction": 0.05,
+    "median_lost": 1,
+    "median_served": 1
+  },
+  {
+    "days_completed": 2,
+    "episodes": 3,
+    "expert_fraction": 0.1,
+    "median_lost": 1,
+    "median_served": 3
+  },
+  {
+    "days_completed": 3,
+    "episodes": 3,
+    "expert_fraction": 0.2,
+    "median_lost": 0,
+    "median_served": 4
+  },
+  {
+    "days_completed": 2,
+    "episodes": 3,
+    "expert_fraction": 0.3,
+    "median_lost": 0,
+    "median_served": 2
+  },
+  {
+    "days_completed": 3,
+    "episodes": 3,
+    "expert_fraction": 0.5,
+    "median_lost": 0,
+    "median_served": 4
+  },
+  {
+    "days_completed": 3,
+    "episodes": 3,
+    "expert_fraction": 1.0,
+    "median_lost": 0,
+    "median_served": 4
+  }
+]

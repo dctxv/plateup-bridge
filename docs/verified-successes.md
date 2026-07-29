@@ -61,6 +61,11 @@ sample count has not been reached.
 | Steak agent in the live game | Never run. No live evidence exists for any agent layer. | PENDING |
 | Environment API and random soak | 11/11 API checks; 20,000 random actions with a constant observation shape and stated terminal reasons, on the offline model. | PASS (offline) |
 | Capability registry | Measured against the offline model only. No live rows exist. | PROVISIONAL |
+| Preparation phase handling | Popup cleared with Cancel, consent given once, day started; verified against the model and the recorded day 0 checklist. | PASS (offline) |
+| Behaviour-cloning pipeline | Datasets from human recordings and from the model; goal-conditioned policy trains and round-trips. | PASS (offline) |
+| Learned motor policy, Phase G gate | Best observed 1 group of 4; best-validated 0, against a baseline of 4. Movement is the gap: learned buttons alone reach parity. | FAIL (gate not met, decision written) |
+| Reward-hacking suite | 12 of 14 section 11.3 adversaries closed against the model; 2 are live-only and stay OPEN. | PASS (offline, partial) |
+| Evidence bundle | Run manifests record code, schemas, pinned build and artifact hashes, and re-check them. | PASS (offline) |
 
 ---
 
@@ -693,6 +698,126 @@ here has ever run against PlateUp.
   the registry it was calibrated from contains only model-derived rows. The
   agreement shown here means the option abstraction does not itself distort
   the day; it says nothing about either model matching PlateUp.
+
+
+### 4B.5 Preparation phase, handled end to end
+
+- **Date:** 2026-07-30
+- **Command:** `python python\selftest.py --only preparation`
+- **Grounding:** both recordings publish `start_day_warnings` only on day 0 —
+  378 frames in the golden trace, 123 in the smoke recording — with
+  `players_not_ready` at Error until consent and every other warning at Safe.
+  `popups_open` reached Error in exactly the 94 golden-trace frames where
+  `input_captured` was true.
+- **Observed:** 5 of 5 checks passed. The controller clears a modal popup with
+  `MenuCancel`, consents once, the day starts, and the modelled day is then
+  served 4 of 4 with nothing lost.
+- **Two behaviours that would each have cost a live session:** consent
+  **toggles** on the `Pressed` edge, so a controller that releases and presses
+  again un-readies itself and stalls the day forever; and the day will not
+  start under an open popup, so consent has to wait for it to clear.
+- **Status:** PASS (offline model and recorded artifacts).
+- **Limitations:** the model's preparation phase is a reconstruction from the
+  published checklist, not a recording of one being cleared. `MenuSelect` is
+  deliberately never sent, so a popup that requires a choice will stop the run
+  with a message rather than be answered.
+
+### 4B.6 Behaviour cloning, goal conditioning, and the Phase G gate
+
+- **Date:** 2026-07-30
+- **Schemas:** `encode_0.2` / `env_0.2` / `dataset_0.1` / `policy_0.1` /
+  `dagger_0.1` / `evaluate_0.1`
+- **Commands:**
+  `python python\dataset.py model runs\datasets\reference-goal.npz --episodes 14`,
+  `python python\policy.py train runs\datasets\reference-goal.npz runs\policies\bc-goal.npz`,
+  `python python\evaluate.py compare runs\policies\bc-goal.npz`
+- **Acceptance gate:** specification section 12 stage G requires the option
+  gates to pass across held-out starts. The operational proxy used here is
+  matching the scripted baseline's 4-of-4 groups served.
+- **Observed:** no variant of the learned policy comes close to the baseline.
+  The best observed was a **median of 1** group of 4 with 8 of 8 modelled days
+  completed; the best-validated checkpoint, trained on 60 randomised-start
+  episodes with a held-out accuracy of 0.969, serves **0**. The baseline serves
+  **4**.
+- **Verdict:** **FAIL.** The Phase G gate is not met. The pipeline is complete
+  and measured; the policy is not good enough.
+- **Curriculum randomisation, a second negative result:** specification
+  section 10.3 step 3 was implemented and the dataset regenerated at three
+  times the size (60 episodes, 187,950 states). Held-out accuracy rose from
+  0.863 to **0.969** and groups served fell from 1 to **0**. Generalisation
+  improved; play did not. This is the **third** time in this work that
+  supervised accuracy and play moved in opposite directions.
+- **Findings that are results in their own right**, recorded in
+  [learning-pipeline.md](learning-pipeline.md):
+  - a state-only clone reached **97.2%** held-out per-frame accuracy and served
+    **zero** groups on every seed, walking into an appliance and pushing
+    against it for the rest of the day. Per-frame accuracy is not a proxy for
+    playing, and this is why `evaluate.py` scores by playing;
+  - cloning a hierarchical expert needs the goal: 4.5% of repeated quantised
+    states carried conflicting movement labels, because the planner's choice of
+    target is not in the observation;
+  - inverse-frequency class balancing, correct on the movement heads, made the
+    grab head fire in **36%** of frames against a true 1.9%, at **99.0%
+    balanced accuracy**, putting the chef in a plate-on-plate-off loop for a
+    whole modelled day. Balancing is now applied to the movement heads only and
+    `policy.py report` prints the fires-versus-should ratio that balanced
+    accuracy hides.
+- **DAgger, a negative result:** six iterations, four rollouts each, an
+  aggregate grown from 32,000 to **124,984** states. Every iteration scored a
+  median of 0 groups served against the seed policy's 1, so the retained
+  checkpoint is iteration 0. Aggregating more labels at the states the policy
+  reaches is not what is missing. History:
+  [dagger-goal-history.json](../runs/policies/dagger-goal-history.json).
+- **How far off, measured:** `python python\evaluate.py assist` hands a given
+  share of ticks to the scripted controller. **10%** reaches full parity
+  (4 served, 0 lost); 5% already triples the score. The policy is failing on a
+  small, decisive minority of frames rather than being generally lost.
+  Artifact: [assist-sweep.json](../runs/policies/assist-sweep.json).
+- **Which half, measured:** `python python\evaluate.py split` gives one half of
+  the action to the policy and the other to the option layer. Buttons learned
+  with a scripted route serves **4 of 4**, which is parity; movement learned
+  with scripted buttons serves **2**. **The gap is movement, not the press.**
+  This contradicted the earlier reading of the on-policy mismatch table, which
+  had blamed the press head; that mismatch is measured at states the movement
+  head had already drifted into. Artifact:
+  [policy-split.json](../runs/benchmark/policy-split.json).
+- **Evidence bundle:** [steak-agent.json](../runs/manifests/steak-agent.json)
+  records the commit, every schema version, the pinned build taken from the
+  recording's handshake, and a SHA-256 for each artifact above.
+  `python python\manifest.py --check runs\manifests\steak-agent.json`
+  re-hashes them and reports anything that has moved.
+- **Status:** PASS for the pipeline, FAIL for the gate.
+- **Decision:** specification section 12 requires a written method-change
+  decision rather than a longer run. It is
+  [phase-g-decision.md](phase-g-decision.md), kept current as items were
+  measured and failed. RL fine-tuning is now first, then changing the movement
+  representation to the continuous head section 7.1 already declares as the
+  comparison baseline; explicitly not more DAgger, more data, more epochs, or a
+  larger network, all four of which have now been tried and measured.
+- **Limitations:** trained against `mockgame`, so the policy has learned the
+  model. The task layer is still the scripted planner, so this is a learned
+  motor controller under a scripted planner and not an autonomous agent.
+  Specification section 10.3 step 6 (RL fine-tuning) is not implemented.
+
+### 4B.7 Reward-hacking suite
+
+- **Date:** 2026-07-30
+- **Command:** `python python\antihack.py`
+- **Acceptance gate:** every specification section 11.3 exploit either fails to
+  pay or is reported as untestable, with no exploit passing quietly.
+- **Observed:** **12 of 14** checks closed. Idling, refusing to start the day,
+  holding every input, spamming interactions, camping and deliberately failing
+  all earn nothing and are beaten by the baseline. An unchanged frame pays
+  nothing and money going backwards pays nothing, so an order cannot be
+  farmed. Ruining items is a cost.
+- **Left OPEN, deliberately:** Practice-only reset state and duplicate command
+  receipts. Both are properties of the live bridge, and both are reported as
+  OPEN rather than counted as passing.
+- **Status:** PASS (offline, partial).
+- **Limitations:** measured against the model. The reward function is designed
+  so most of these are structurally impossible rather than merely
+  unprofitable, but that design is only as good as the model it was checked
+  against.
 
 ---
 

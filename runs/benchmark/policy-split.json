@@ -1,0 +1,526 @@
+[
+  {
+    "best_episode": {
+      "completion_rate": 0.6666666666666666,
+      "control_ticks": 5441,
+      "day_completed": false,
+      "episode": 0,
+      "groups_arrived": 3,
+      "idle_fraction": 0.003492005146112847,
+      "interaction_attempts": 136,
+      "lives_remaining": 0,
+      "lost": 1,
+      "meals_per_minute": 0.5882352941176471,
+      "median_option_seconds": 1.538,
+      "money": 10,
+      "option_success_rate": 0.6896551724137931,
+      "options": 29,
+      "reward": 0.0,
+      "ruined": 0,
+      "seconds": 204.0,
+      "seed": 1,
+      "served": 2
+    },
+    "completion_rate": {
+      "max": 0.6666666666666666,
+      "mean": 0.4167,
+      "median": 0.5,
+      "min": 0.0,
+      "p90": 0.6666666666666666
+    },
+    "day_completion": {
+      "attempts": 4,
+      "completed": 2,
+      "confidence_high": 0.85,
+      "confidence_low": 0.15,
+      "rate": 0.5
+    },
+    "human_interventions": 0,
+    "idle_fraction": {
+      "max": 0.003492005146112847,
+      "mean": 0.0024,
+      "median": 0.002175489485134155,
+      "min": 0.0019337684312303602,
+      "p90": 0.003492005146112847
+    },
+    "interaction_attempts": {
+      "max": 136,
+      "mean": 46.0,
+      "median": 17.0,
+      "min": 14,
+      "p90": 136
+    },
+    "lost": {
+      "max": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "min": 1,
+      "p90": 1
+    },
+    "meals_per_minute": {
+      "max": 0.5882352941176471,
+      "mean": 0.3405,
+      "median": 0.3868471953578337,
+      "min": 0.0,
+      "p90": 0.5882352941176471
+    },
+    "median_option_seconds": {
+      "max": 1.538,
+      "mean": 0.3845,
+      "median": 0.0,
+      "min": 0.0,
+      "p90": 1.538
+    },
+    "money": {
+      "max": 10,
+      "mean": 5.0,
+      "median": 5.0,
+      "min": 0,
+      "p90": 10
+    },
+    "n": 4,
+    "no_group_lost": {
+      "attempts": 4,
+      "confidence_high": 0.4899,
+      "confidence_low": 0.0,
+      "episodes": 0,
+      "rate": 0.0
+    },
+    "option_success_rate": {
+      "max": 0.6896551724137931,
+      "mean": 0.1752,
+      "median": 0.0037678226995953253,
+      "min": 0.0036496350364963502,
+      "p90": 0.6896551724137931
+    },
+    "options": {
+      "max": 3014,
+      "mean": 2093.25,
+      "median": 2665.0,
+      "min": 29,
+      "p90": 3014
+    },
+    "policy": "split:policy_moves",
+    "reward": {
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p90": 0.0
+    },
+    "ruined": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0,
+      "p90": 0
+    },
+    "seconds": {
+      "max": 204.0,
+      "mean": 167.325,
+      "median": 155.1,
+      "min": 155.1,
+      "p90": 204.0
+    },
+    "served": {
+      "max": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "min": 0,
+      "p90": 2
+    }
+  },
+  {
+    "best_episode": {
+      "completion_rate": 1.0,
+      "control_ticks": 2667,
+      "day_completed": true,
+      "episode": 0,
+      "groups_arrived": 4,
+      "idle_fraction": 0.15073115860517436,
+      "interaction_attempts": 215,
+      "lives_remaining": 1,
+      "lost": 0,
+      "meals_per_minute": 2.4,
+      "median_option_seconds": 0.413,
+      "money": 20,
+      "option_success_rate": 0.9411764705882353,
+      "options": 68,
+      "reward": 0.0,
+      "ruined": 1,
+      "seconds": 100.0,
+      "seed": 1,
+      "served": 4
+    },
+    "completion_rate": {
+      "max": 1.0,
+      "mean": 1.0,
+      "median": 1.0,
+      "min": 1.0,
+      "p90": 1.0
+    },
+    "day_completion": {
+      "attempts": 4,
+      "completed": 4,
+      "confidence_high": 1.0,
+      "confidence_low": 0.5101,
+      "rate": 1.0
+    },
+    "human_interventions": 0,
+    "idle_fraction": {
+      "max": 0.15073115860517436,
+      "mean": 0.1501,
+      "median": 0.15073115860517436,
+      "min": 0.14810648668916385,
+      "p90": 0.15073115860517436
+    },
+    "interaction_attempts": {
+      "max": 256,
+      "mean": 225.0,
+      "median": 215.0,
+      "min": 214,
+      "p90": 256
+    },
+    "lost": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0,
+      "p90": 0
+    },
+    "meals_per_minute": {
+      "max": 2.4,
+      "mean": 2.4,
+      "median": 2.4,
+      "min": 2.4,
+      "p90": 2.4
+    },
+    "median_option_seconds": {
+      "max": 0.413,
+      "mean": 0.413,
+      "median": 0.413,
+      "min": 0.413,
+      "p90": 0.413
+    },
+    "money": {
+      "max": 20,
+      "mean": 20.0,
+      "median": 20.0,
+      "min": 20,
+      "p90": 20
+    },
+    "n": 4,
+    "no_group_lost": {
+      "attempts": 4,
+      "confidence_high": 1.0,
+      "confidence_low": 0.5101,
+      "episodes": 4,
+      "rate": 1.0
+    },
+    "option_success_rate": {
+      "max": 0.9516129032258065,
+      "mean": 0.9438,
+      "median": 0.9411764705882353,
+      "min": 0.9411764705882353,
+      "p90": 0.9516129032258065
+    },
+    "options": {
+      "max": 68,
+      "mean": 66.5,
+      "median": 68.0,
+      "min": 62,
+      "p90": 68
+    },
+    "policy": "split:policy_presses",
+    "reward": {
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p90": 0.0
+    },
+    "ruined": {
+      "max": 1,
+      "mean": 0.75,
+      "median": 1.0,
+      "min": 0,
+      "p90": 1
+    },
+    "seconds": {
+      "max": 100.0,
+      "mean": 100.0,
+      "median": 100.0,
+      "min": 100.0,
+      "p90": 100.0
+    },
+    "served": {
+      "max": 4,
+      "mean": 4.0,
+      "median": 4.0,
+      "min": 4,
+      "p90": 4
+    }
+  },
+  {
+    "best_episode": {
+      "completion_rate": 0.0,
+      "control_ticks": 4137,
+      "day_completed": false,
+      "episode": 0,
+      "groups_arrived": 1,
+      "idle_fraction": 0.023205221174764323,
+      "interaction_attempts": 30,
+      "lives_remaining": 0,
+      "lost": 1,
+      "meals_per_minute": 0.0,
+      "median_option_seconds": 0.0,
+      "money": 0,
+      "option_success_rate": 0.0009601536245799327,
+      "options": 2083,
+      "reward": 0.0,
+      "ruined": 0,
+      "seconds": 155.1,
+      "seed": 1,
+      "served": 0
+    },
+    "completion_rate": {
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p90": 0.0
+    },
+    "day_completion": {
+      "attempts": 4,
+      "completed": 0,
+      "confidence_high": 0.4899,
+      "confidence_low": 0.0,
+      "rate": 0.0
+    },
+    "human_interventions": 0,
+    "idle_fraction": {
+      "max": 0.023205221174764323,
+      "mean": 0.0232,
+      "median": 0.023205221174764323,
+      "min": 0.023205221174764323,
+      "p90": 0.023205221174764323
+    },
+    "interaction_attempts": {
+      "max": 30,
+      "mean": 30.0,
+      "median": 30.0,
+      "min": 30,
+      "p90": 30
+    },
+    "lost": {
+      "max": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "min": 1,
+      "p90": 1
+    },
+    "meals_per_minute": {
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p90": 0.0
+    },
+    "median_option_seconds": {
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p90": 0.0
+    },
+    "money": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0,
+      "p90": 0
+    },
+    "n": 4,
+    "no_group_lost": {
+      "attempts": 4,
+      "confidence_high": 0.4899,
+      "confidence_low": 0.0,
+      "episodes": 0,
+      "rate": 0.0
+    },
+    "option_success_rate": {
+      "max": 0.0009601536245799327,
+      "mean": 0.001,
+      "median": 0.0009601536245799327,
+      "min": 0.0009601536245799327,
+      "p90": 0.0009601536245799327
+    },
+    "options": {
+      "max": 2083,
+      "mean": 2083.0,
+      "median": 2083.0,
+      "min": 2083,
+      "p90": 2083
+    },
+    "policy": "policy[goal](reference-goal.npz)+planner",
+    "reward": {
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p90": 0.0
+    },
+    "ruined": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0,
+      "p90": 0
+    },
+    "seconds": {
+      "max": 155.1,
+      "mean": 155.1,
+      "median": 155.1,
+      "min": 155.1,
+      "p90": 155.1
+    },
+    "served": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0,
+      "p90": 0
+    }
+  },
+  {
+    "best_episode": {
+      "completion_rate": 1.0,
+      "control_ticks": 2667,
+      "day_completed": true,
+      "episode": 0,
+      "groups_arrived": 4,
+      "idle_fraction": 0.547806524184477,
+      "interaction_attempts": 51,
+      "lives_remaining": 1,
+      "lost": 0,
+      "meals_per_minute": 2.4,
+      "median_option_seconds": 0.412,
+      "money": 20,
+      "option_success_rate": 0.9937106918238994,
+      "options": 159,
+      "reward": 0.0,
+      "ruined": 0,
+      "seconds": 100.0,
+      "seed": 1,
+      "served": 4
+    },
+    "completion_rate": {
+      "max": 1.0,
+      "mean": 1.0,
+      "median": 1.0,
+      "min": 1.0,
+      "p90": 1.0
+    },
+    "day_completion": {
+      "attempts": 4,
+      "completed": 4,
+      "confidence_high": 1.0,
+      "confidence_low": 0.5101,
+      "rate": 1.0
+    },
+    "human_interventions": 0,
+    "idle_fraction": {
+      "max": 0.5549306336707911,
+      "mean": 0.549,
+      "median": 0.547244094488189,
+      "min": 0.5466816647919011,
+      "p90": 0.5549306336707911
+    },
+    "interaction_attempts": {
+      "max": 54,
+      "mean": 52.0,
+      "median": 52.5,
+      "min": 49,
+      "p90": 54
+    },
+    "lost": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0,
+      "p90": 0
+    },
+    "meals_per_minute": {
+      "max": 2.4,
+      "mean": 2.4,
+      "median": 2.4,
+      "min": 2.4,
+      "p90": 2.4
+    },
+    "median_option_seconds": {
+      "max": 0.412,
+      "mean": 0.412,
+      "median": 0.412,
+      "min": 0.412,
+      "p90": 0.412
+    },
+    "money": {
+      "max": 20,
+      "mean": 20.0,
+      "median": 20.0,
+      "min": 20,
+      "p90": 20
+    },
+    "n": 4,
+    "no_group_lost": {
+      "attempts": 4,
+      "confidence_high": 1.0,
+      "confidence_low": 0.5101,
+      "episodes": 4,
+      "rate": 1.0
+    },
+    "option_success_rate": {
+      "max": 0.9937888198757764,
+      "mean": 0.9937,
+      "median": 0.9937497558498378,
+      "min": 0.9937106918238994,
+      "p90": 0.9937888198757764
+    },
+    "options": {
+      "max": 161,
+      "mean": 160.0,
+      "median": 160.0,
+      "min": 159,
+      "p90": 161
+    },
+    "policy": "reference",
+    "reward": {
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p90": 0.0
+    },
+    "ruined": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0,
+      "p90": 0
+    },
+    "seconds": {
+      "max": 100.0,
+      "mean": 100.0,
+      "median": 100.0,
+      "min": 100.0,
+      "p90": 100.0
+    },
+    "served": {
+      "max": 4,
+      "mean": 4.0,
+      "median": 4.0,
+      "min": 4,
+      "p90": 4
+    }
+  }
+]
