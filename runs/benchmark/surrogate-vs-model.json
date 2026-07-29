@@ -1,0 +1,75 @@
+{
+  "episodes": 20,
+  "model": {
+    "lost": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0
+    },
+    "money": {
+      "max": 20,
+      "mean": 20.0,
+      "median": 20.0,
+      "min": 20
+    },
+    "options": {
+      "max": 163,
+      "mean": 160.25,
+      "median": 160.5,
+      "min": 158
+    },
+    "ruined": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0
+    },
+    "served": {
+      "max": 4,
+      "mean": 4.0,
+      "median": 4.0,
+      "min": 4
+    }
+  },
+  "registry": "runs\\capability\\mock-reference.json",
+  "registry_source": "mockgame:runs\\demos\\smoke.jsonl",
+  "surrogate": {
+    "lost": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0
+    },
+    "money": {
+      "max": 20,
+      "mean": 20.0,
+      "median": 20.0,
+      "min": 20
+    },
+    "ruined": {
+      "max": 0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0
+    },
+    "served": {
+      "max": 4,
+      "mean": 4.0,
+      "median": 4.0,
+      "min": 4
+    },
+    "support_rate": {
+      "max": 1.0,
+      "mean": 1.0,
+      "median": 1.0,
+      "min": 1.0
+    },
+    "transitions": {
+      "max": 203,
+      "mean": 193.1,
+      "median": 195.0,
+      "min": 170
+    }
+  }
+}

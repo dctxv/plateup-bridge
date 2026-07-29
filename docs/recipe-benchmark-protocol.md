@@ -1,6 +1,11 @@
 # Recipe benchmark protocol
 
-**Status:** protocol declared and analyzer validated; no benchmark recordings taken
+**Status:** protocol declared and analyzer validated; no benchmark recordings taken.
+**Superseded for Project 1 scope, not for measurement:** the recipe was fixed to
+steak by project-owner decision on 2026-07-29, recorded in
+[`steak-decision.md`](steak-decision.md). That is a scope choice and **not** a
+result of this protocol. Nothing below has been changed, so this benchmark can
+still be run and can still overturn the choice under §7.
 **Pinned game:** PlateUp `1.4.3-FF8F`
 **Bridge:** `0.3.0`
 **Protocol / schemas:** `1` / `obs_0.1` / `act_0.1` / `demo_0.1`

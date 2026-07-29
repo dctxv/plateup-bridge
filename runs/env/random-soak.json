@@ -1,0 +1,11 @@
+{
+  "episodes": 4,
+  "observation_lengths": [
+    147
+  ],
+  "steps": 20000,
+  "terminal_reasons": {
+    "game_over": 4
+  },
+  "total_reward": -8.375
+}

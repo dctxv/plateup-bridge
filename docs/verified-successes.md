@@ -55,6 +55,12 @@ sample count has not been reached.
 | Recipe benchmark protocol | Matched conditions, sample size, metrics, and decision rule declared before any benchmark recording. | DECLARED |
 | Demonstration analyzer | Reproduces the ledger's golden-trace counts exactly; 10/10 offline checks pass. | PASS |
 | Recipe benchmark result | Not started. No benchmark session has been recorded. | PENDING |
+| Project 1 recipe | Fixed to steak by project-owner scope decision, **not** by the benchmark. | DECIDED (scope) |
+| Observation facts from artifacts | Rotation zero, provider infinity, floor mess, table linkage and entity recycling derived; 14/14 checks pass. | PASS (offline) |
+| Steak agent offline gate | 100/100 checks across facts, geometry, recipe, options, model, service, capability, surrogate and environment. | PASS (offline) |
+| Steak agent in the live game | Never run. No live evidence exists for any agent layer. | PENDING |
+| Environment API and random soak | 11/11 API checks; 20,000 random actions with a constant observation shape and stated terminal reasons, on the offline model. | PASS (offline) |
+| Capability registry | Measured against the offline model only. No live rows exist. | PROVISIONAL |
 
 ---
 
@@ -314,6 +320,55 @@ The detailed field contract and enum mappings remain in
   to match.
 - **Status:** documentation correction. No result is withdrawn.
 
+### 2.7 Observation facts derived from the recorded artifacts
+
+- **Date:** 2026-07-29
+- **Game:** PlateUp `1.4.3-FF8F`
+- **Bridge:** `0.2.4` and `0.3.0` recordings; the deriver is offline and reads
+  files only.
+- **Protocol / schemas:** `1` / `obs_0.1` / `act_0.1` / `demo_0.1`
+- **Command:** `python python\facts.py --json runs\facts\observation-facts.json`
+- **Artifact:** [observation-facts.json](../runs/facts/observation-facts.json)
+- **Artifact SHA-256:**
+  `9685E7C7F1693CA6380BC78C3F416320F64E98519485F54F0336FA22A6435D56`
+- **Inputs:** `runs/golden/obs_0.1_day1.jsonl` (section 2.3) and
+  `runs/demos/smoke.jsonl` (section 2.4).
+- **Acceptance gate:** each derived fact must hold on the recordings that
+  produced it, and the deriver re-asserts all fourteen on every run.
+- **Observed:** 14 of 14 checks passed.
+  - **Rotation zero, resolved.** `rot = atan2(MoveX, MoveY)` in degrees; 0
+    faces +z and 90 faces +x. 187 steady samples across all four quadrants,
+    median error **0.21°**, p90 **3.29°**. Larger errors occur only while the
+    commanded direction is still changing, which is turn latency.
+  - **Provider infinity, resolved.** Infinite providers report `maximum` 0 and
+    `available` 0, not a negative sentinel. `Plate Stack - Starting` reports
+    `maximum` 4 with `available` 4 → 0. This corrects the schema's earlier
+    "negative appears to mean infinite".
+  - **Floor mess, resolved.** Mess is published as `Mess - *` appliances at
+    `OccupancyLayer.Floor`, off the tile grid; it was never a missing field.
+    Layer 2 holds exactly mess, mop water, nameplates and the practice
+    trigger, and every other appliance sits at layer 0.
+  - **Table linkage, negative result.** `groups[].table` resolved 0 times out
+    of 1,473 in the golden trace and 0 of 731 in the smoke recording, and
+    `is_table` was emitted 0 times in either. The `CTableSet` entity is not an
+    appliance. The substitute is the group's own position, which sits exactly
+    on a table appliance in 823 of 823 and 421 of 421 seated group frames.
+  - **Entity recycling.** 17 appliance names in the golden trace span two or
+    three generations of entity ID at a constant per-frame count, and 14 do in
+    the smoke recording: fixed appliances are rebuilt when the day starts.
+    `(aid, tile)` survives it.
+  - **Reach model.** All three recorded deliveries stood inside the 1.4-unit
+    reach limit, at 0.88, 0.91 and 1.02 units. Two aimed at the table and one
+    at an occupied chair; all three put the plate on the table.
+- **Result:** `OK -- 14 observation facts derived from recorded artifacts`.
+- **Status:** PASS for the derivations against the recorded artifacts.
+- **Limitations:** these are properties of two recordings on one build, not
+  live probes. The rotation and provider results are strong because they span
+  the full circle and both provider kinds; the table-linkage result is a
+  negative one and only says the reference cannot be resolved from `obs_0.1`,
+  not why. `observation-schema.md` has been updated to match, without a schema
+  version bump, because no field changed.
+
 ---
 
 ## 3. Phase C input-channel successes
@@ -501,6 +556,146 @@ Historical request results are retained in
 
 ---
 
+## 4A. Project 1 recipe scope decision
+
+### 4A.1 Steak selected as the Project 1 recipe
+
+- **Date:** 2026-07-29
+- **Decision:** Project 1 is fixed to the steak base recipe.
+- **Basis:** project-owner scope decision. **Not** a benchmark result.
+- **Record:** [steak-decision.md](steak-decision.md)
+- **Status:** DECIDED (scope).
+- **Explicitly not claimed:** that steak is the measured easier recipe.
+  [recipe-benchmark-protocol.md](recipe-benchmark-protocol.md) has not been
+  run, no benchmark session exists for either arm, and the "Recipe benchmark
+  result" row above stays PENDING. The protocol, its decision rule and its
+  §5.1 tiebreak are unchanged and can still be run.
+- **Limitations:** the specification's §10.5 requirement to choose the recipe
+  by measurement is unmet. The decision is revisable under the protocol's §7
+  triggers plus the additional Phase G and Phase H triggers in
+  `steak-decision.md` §5.
+
+---
+
+## 4B. Steak agent layers, offline only
+
+Everything in this section was measured against `python/mockgame.py`, a
+tick-level **model** of the game built from the two recordings, or against the
+recordings themselves. None of it is live-game evidence, and no layer described
+here has ever run against PlateUp.
+
+### 4B.1 Offline gate for the steak agent
+
+- **Date:** 2026-07-29
+- **Game target:** PlateUp `1.4.3-FF8F` (not run; the gate is offline)
+- **Bridge target:** `0.3.0`
+- **Schemas:** `obs_0.1` / `act_0.1` / `encode_0.1` / `capability_0.1` /
+  `env_0.1`
+- **Command:** `python python\selftest.py --json runs\selftest\offline-gate.json`
+- **Artifact:** [offline-gate.json](../runs/selftest/offline-gate.json)
+- **Artifact SHA-256:**
+  `488467A89E3819D8D98274853BA36600923CB5695942646A03775A17F93EE874`
+- **Acceptance gate:** every check passes, across nine groups: facts,
+  geometry, steak, options, model, service, capability, surrogate and
+  environment.
+- **Observed:** **100 of 100** checks passed, 0 failed.
+  - Geometry: every working appliance in the recorded steak layout has a
+    reachable approach pose with a positive aim clearance, and all three
+    recorded human delivery stances pass the same aim model the planner uses.
+  - Steak: the chain, the servable set, the measured-rate-to-timescale
+    identity, and menu inference, including that the recorded burger day is
+    **not** recognised as steak.
+  - Options: acquire, place, watch-cook, plate and buffer complete against the
+    model; invalidation, timeout, neutral release and the grab press/release
+    edge are classified as specified.
+  - Environment: 11 API checks plus a 12,000-step random-action soak.
+- **Result:** `OK -- 100 offline checks passed. This is an offline gate and not
+  live-game evidence.`
+- **Status:** PASS (offline).
+- **Limitations:** a pass means the agent code is internally consistent and
+  agrees with the two recordings. It says nothing about how the chef behaves
+  on screen. The model's simplifications are listed in `mockgame.py`:
+  customers do not collide with the chef, there is no mess, fire, dessert
+  course or dish rack, and every group orders one main.
+
+### 4B.2 Reference controller on the offline model
+
+- **Date:** 2026-07-29
+- **Command:**
+  `python python\service.py mock --episodes 8 --capability runs\capability\mock-reference.json --json runs\benchmark\mock-episodes.json`
+- **Artifacts:** [mock-episodes.json](../runs/benchmark/mock-episodes.json)
+  (SHA-256 `3BD0BB9EB8E87A0D03E7BF89057C926EA44161838ED84F922E8BA5228D6B8EA5`),
+  [mock-reference.json](../runs/capability/mock-reference.json)
+  (SHA-256 `57B6C6DD1044284DC00563DAF723C33505944B45B3A8E6B514FE22842BF837DA`)
+- **Layout:** taken verbatim from the recorded steak restaurant in
+  `runs/demos/smoke.jsonl`.
+- **Sweep artifact:** [mock-sweep.txt](../runs/benchmark/mock-sweep.txt)
+- **Sweep SHA-256:**
+  `503965BCE62C935F617A61A1562186C88E85570E63AA3BD0599B9A6FF6F6FE33`
+- **Observed:** 8 of 8 modelled days served **4 of 4** groups with **0** lost
+  and **0** ruined items. A ten-configuration sweep is retained in that
+  artifact: every configuration up
+  to and including a saturated day with a single plate lost nobody and ruined
+  nothing. Working while a steak cooks served **7** on a saturated modelled
+  day against **6** standing at the hob, and lifting at Well-done served
+  **6** against **7** lifting at Rare. The one configuration that lost a
+  group — 12 groups every 5 s with one plate, cooked to Well-done — is a
+  plate-throughput limit, not a stall: a single plate serialises the kitchen.
+- **Status:** PASS (offline model only).
+- **Bugs this found, which are the point of having a model:** a cooked steak
+  in hand with no clean plate and every counter full deadlocked the chef; a
+  clean plate in hand made the planner aim repeatedly at an already-occupied
+  plate stack, failing 158 times in one modelled day; and counting only
+  finished dishes as work-in-progress let the counters fill with cooked steaks
+  no plate would ever arrive for. All three are fixed and covered by the
+  offline gate.
+- **Limitations:** this is a **scripted** controller. Specification §2.3
+  disallows scripted cook-plate-serve control and deterministic pathfinding
+  inside a scored run, so this is a baseline and a data source, never an
+  autonomy result. The throughput comparison between doneness policies is a
+  property of the model's timings, three of which are knowledge-base priors
+  that have never been observed on a steak.
+
+### 4B.3 Environment API and random-action soak
+
+- **Date:** 2026-07-29
+- **Commands:** `python python\env.py check`,
+  `python python\env.py soak --steps 20000 --json runs\env\random-soak.json`
+- **Artifact:** [random-soak.json](../runs/env/random-soak.json)
+- **Artifact SHA-256:**
+  `5DF3EF87514C12325587E17D29463AF6E77FB45D3DBDE55DC5FB377C8F5AE260`
+- **Observed:** 11 of 11 API checks passed. The soak ran **20,000** random
+  actions producing 4 episodes, all terminating as `game_over`, with a single
+  observation length of 147 throughout and a total reward of −8.375. Random
+  play never completed a day; the reference controller completed every day
+  through the same API with a reward of 3.95.
+- **Status:** PASS (offline model only).
+- **Limitations:** specification §16.3 requires the soak to run against the
+  real bridge across phase transitions and resets. This soak ran against the
+  model, so it exercises the environment's own contract, not the bridge's. The
+  live 100,000-command soak remains FAIL/PENDING (§5.3).
+
+### 4B.4 Semi-MDP surrogate against the model it was calibrated on
+
+- **Date:** 2026-07-29
+- **Command:**
+  `python python\surrogate.py compare runs\capability\mock-reference.json --episodes 20 --json runs\benchmark\surrogate-vs-model.json`
+- **Artifact:** [surrogate-vs-model.json](../runs/benchmark/surrogate-vs-model.json)
+- **Artifact SHA-256:**
+  `27B9FCBB86B80936291E49B1A3C45F8865100C19E5E94006A6F9E35393124365`
+- **Observed:** over 20 episodes each, the surrogate and the tick-level model
+  agreed exactly on the medians that matter: 4 served, 0 lost, 0 ruined, 20
+  money. Calibration support was 1.0, meaning every measurable transition
+  found a registry row.
+- **Status:** PASS for internal consistency between the two models.
+- **Limitations:** this is **not** the specification §9.4 validation. That
+  requires the surrogate to predict held-out **real** service outcomes, and
+  the registry it was calibrated from contains only model-derived rows. The
+  agreement shown here means the option abstraction does not itself distort
+  the day; it says nothing about either model matching PlateUp.
+
+---
+
 ## 5. Failed and inconclusive gates
 
 These results are deliberately included because they constrain subsequent
@@ -570,23 +765,31 @@ for 5M steps is not approved.
 
 ---
 
-## 6. Remaining measurement gates before Phase E
+## 6. Remaining measurement gates
 
 1. Retain the 1x-only motor-fidelity decision unless new evidence supersedes the
    failed 2x/3x gate.
-2. Record matched burger and steak demonstrations under
-   [recipe-benchmark-protocol.md](recipe-benchmark-protocol.md), then decide the
-   recipe with `python python\demo_analyze.py benchmark`.
+2. **Run the steak agent in the live game.** Nothing in section 4B has ever
+   touched PlateUp. The first live run of `python python\service.py run` inside
+   Practice, with a capability registry written from real trials, is the gate
+   that turns any of it into evidence.
+3. Compare the live capability registry against the model's. That difference
+   is the first honest measurement of how wrong `mockgame` is, and it is what
+   the surrogate's §9.4 validation depends on.
+4. Close the 100,000-command soak (§5.3) before any unattended run.
+5. Optionally, record matched burger and steak demonstrations under
+   [recipe-benchmark-protocol.md](recipe-benchmark-protocol.md) and decide the
+   recipe by measurement. The recipe is currently fixed by scope decision
+   (§4A.1), not by that protocol.
 
 The Phase D measurements, canonical trace, native-input recorder smoke gate, and
 demonstration analyzer are complete. The benchmark protocol and its decision rule
-are declared. Only the recordings remain.
+remain declared and unrun.
 
-No Gym/environment design should be treated as stable until the recipe gate is
-closed. Note that the benchmark measures intrinsic production-chain cost and
-**not** behaviour under service load: Day 1 saturates every demand-pressure
-proxy tested (protocol section 4.1.1), so a load comparison would need a harder
-day and its own protocol.
+Note that the benchmark measures intrinsic production-chain cost and **not**
+behaviour under service load: Day 1 saturates every demand-pressure proxy
+tested (protocol section 4.1.1), so a load comparison would need a harder day
+and its own protocol.
 
 ---
 

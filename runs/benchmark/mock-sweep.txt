@@ -1,0 +1,12 @@
+Reference controller on the offline model (mockgame). Not game evidence.
+configuration                                                   served    lost   ruined
+day 1 as recorded                                         [4, 4, 4, 4]       0        0
+day 1, one plate                                          [4, 4, 4, 4]       0        0
+day 1, lift at Medium                                     [4, 4, 4, 4]       0        0
+day 1, lift at Well-done                                  [4, 4, 4, 4]       0        0
+day 1, stand at the hob                                   [4, 4, 4, 4]       0        0
+saturated: 10 groups every 9 s                            [7, 7, 7, 7]       0        0
+saturated, one plate                                      [6, 6, 6, 6]       0        0
+saturated, lift at Well-done                              [6, 6, 6, 6]       0        0
+saturated, stand at the hob                               [6, 6, 6, 6]       0        0
+overloaded: 12 groups every 5 s, one plate, Well-done      [3, 3, 3, 3]       4        0

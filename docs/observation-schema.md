@@ -4,7 +4,11 @@
 **Pinned build:** PlateUp 1.4.3-FF8F, Unity 2020.3.48f1, Steam public stable  
 **Bridge:** 0.3.0
 **Transport:** newline-delimited JSON over `\\.\pipe\plateup_bridge`  
-**Rate:** every 6th simulation tick, approximately 10 Hz
+**Rate:** every 6th simulation tick. Measured at **25–30 Hz** in wall time, not
+the 10 Hz the divisor suggests: the simulation group runs at roughly 180 ticks
+per second. Median interval between observations in the recorded traces is
+0.033 s (`runs/demos/smoke.jsonl`) and 0.044 s (`runs/golden`). Clients must
+measure the rate rather than assume it; see `verified-successes.md` §4.4.
 
 Any change to a field's name, type, units, or meaning requires a new schema
 version. Additive optional fields do not.
@@ -113,14 +117,44 @@ unrelated entity within the same day. The pair is unique within one session.
 
 **Never compare entity IDs across sessions.**
 
+**Nor across the day boundary.** Fixed appliances are destroyed and recreated
+when service starts: in `runs/golden` seventeen appliance names appear with two
+or three generations of entity ID for a constant per-frame count, and in
+`runs/demos/smoke.jsonl` fourteen names appear with two. A client that caches
+appliances by entity ID during preparation holds dangling references during
+service. Cache by `(aid, round(x), round(z))` instead, which is stable across
+the rebuild. Derived by `python/facts.py`.
+
 Fields carrying an entity ID are `e`, `table`, `group`, and the members of
 `stored`.
+
+### `groups[].table` cannot be resolved by a client
+
+`CAssignedTable.Table` is emitted, but the entity it names is **not** in the
+appliance query, so the reference never matches a published `e`: 1,473 of 1,473
+attempts in `runs/golden` and 731 of 731 in `runs/demos/smoke.jsonl` fail to
+resolve. For the same reason `is_table`, `chairs` and `waiting_table` are
+emitted by the mod but have **never appeared**: the `CTableSet` entity is not
+an appliance.
+
+The usable substitute is the group's own position. Once a group's
+`patience_reason` is no longer `Seating`, its `x`/`z` sit **exactly** on a
+table appliance's position: 823 of 823 seated group frames in `runs/golden` and
+421 of 421 in the smoke recording, at zero offset. Locate a group's table by
+matching its position against appliances whose name begins `Table`.
 
 ## Coordinates and units
 
 - `x` and `z` are Unity world coordinates. `y` is not emitted; PlateUp is
   functionally two-dimensional and player `y` is pinned by the movement system.
-- `rot` is Y-axis Euler degrees. The zero direction has not been verified.
+- `rot` is Y-axis Euler degrees. **Zero faces +z and 90 faces +x**:
+  `rot = atan2(MoveX, MoveY)` in degrees. Confirmed by pairing the recorded
+  native `InputState.Movement` with the player rotation that followed it, over
+  187 samples with a held direction spanning all four quadrants — median error
+  0.21°, p90 3.29°. Residual error while the commanded direction is still
+  changing is turn latency, not a convention mismatch. Action `MoveX` is world
+  x and `MoveY` is world z, unswapped and unflipped. Derived by
+  `python/facts.py`.
 - Positions are floats and are not grid-aligned. Grid derivation belongs in the
   encoder, not the bridge.
 - Times are seconds unless explicitly described otherwise.
@@ -221,11 +255,11 @@ then toggles consent when `SecondaryAction1` is `Pressed`; it does not consume
 | `x`, `z`, `rot` | float | `CPosition` | |
 | `held` | object | `CItemHolder.HeldItem` | Absent if empty. |
 | `provides` | int | `CItemProvider.ProvidedItem` | Ingredient source. |
-| `available` | int | `CItemProvider.Available` | Negative appears to mean infinite; unverified. |
-| `maximum` | int | `CItemProvider.Maximum` | |
-| `is_table` | true | `CTableSet` present | |
-| `chairs` | int | `CTableSet.ChairCount` | |
-| `waiting_table` | bool | `CTableSet.IsWaitingTable` | |
+| `available` | int | `CItemProvider.Available` | Current stock. See below. |
+| `maximum` | int | `CItemProvider.Maximum` | `0` means infinite. See below. |
+| `is_table` | true | `CTableSet` present | Never observed; see Entity identity. |
+| `chairs` | int | `CTableSet.ChairCount` | Never observed. |
+| `waiting_table` | bool | `CTableSet.IsWaitingTable` | Never observed. |
 | `accepts_any` | bool | `CItemHolderFilter.AllowAny` | |
 | `accepts_cat` | int | `CItemHolderFilter.Category` | `ItemCategory` bit field. |
 | `accepts_only` | int | `CItemHolderOnlySpecificItem.ItemID` | |
@@ -242,6 +276,28 @@ and leave. That explanation is not yet confirmed by name-difference logging.
 The holder-filter fields are component facts, not a complete placement-legality
 oracle. Capacity, interaction state, and recipe systems may impose additional
 constraints.
+
+### Provider stock: `maximum == 0` means infinite
+
+An infinite provider reports `maximum` **0** and `available` **0**, not a
+negative sentinel. Observed on `Source - Meat`, `Source - Burger Patty`,
+`Source - Burger Buns` and the sink's `Water` across both recordings. A finite
+provider reports its capacity: `Plate Stack - Starting` reports `maximum` 4
+with `available` falling 4 → 0 as plates are taken. A client that treats
+`available == 0` as empty will refuse to take meat from an infinite source.
+Derived by `python/facts.py`.
+
+### Floor mess is published as an appliance
+
+Mess entities appear in `appliances[]` at `layer` 2
+(`OccupancyLayer.Floor`) with names beginning `Mess - `, at non-grid-aligned
+positions. `runs/golden` contains `Mess - Kitchen 1`, `Mess - Customer 1` and
+`Mess - Customer 2` across 3,705 frames. `Mop Water`, `Nameplate` and
+`Practice Mode Trigger` are the other Floor-layer entities. Every other
+appliance observed sits at layer 0.
+
+That layer split is also the walkability rule: layer 0 blocks the chef and
+layer 2 does not.
 
 ---
 
@@ -505,14 +561,24 @@ Everything published is visible on screen or derivable from visible state.
 | Gap | Status |
 |---|---|
 | **Fire** | `on_fire` has never been observed. Burned food alone does not ignite; fire requires suitable equipment or misuse. |
-| **Mess** | Floor dirt is not in the schema. The component still needs to be identified through `SpawnTableDirt` / `CreateNewMesses`. |
-| **Failure** | `game_over` and `loss_reason` are implemented but have not yet been observed in a failed run. |
-| **Rotation zero** | The world direction represented by `rot = 0` is unverified. |
-| **Provider infinity** | The `available` convention for infinite providers is assumed, not confirmed. |
-| **Appliance count** | It fluctuates during service; chair spawning is the current hypothesis, not a confirmed explanation. |
-| **Layout tiles** | `CLayoutRoomTile` / `CLayoutInfo` are not emitted. They are needed for the grid encoder and layout validator. |
+| **Failure** | `game_over` and `loss_reason` are implemented but have not yet been observed in a failed run. The numeric `LossReason` for patience depletion is therefore still unknown; only `2` (`Quitting`) has been seen. |
+| **Table set** | `is_table`, `chairs`, `waiting_table` and `groups[].table` are emitted but unusable: the `CTableSet` entity is not an appliance. See Entity identity for the substitute. Fixing it means a separate `CTableSet` query and a new `tables[]` collection carrying `CTablePlace` seat positions — an additive change, but one that invalidates the current integration certificate under specification §1.4 and therefore needs the input, state and reset probes re-run. It is deferred until there is a reason beyond tidiness; the group-position substitute covers Project 1, and seat geometry is a Project 2 layout-validator need. |
+| **Appliance count** | It fluctuates during service; chair spawning is the current hypothesis, not a confirmed explanation. `Ghost Chair` entities appear and disappear alongside real chairs and are treated as non-blocking, which is a prior rather than a measurement. |
+| **Layout tiles** | `CLayoutRoomTile` / `CLayoutInfo` are not emitted. The occupancy grid is currently derived from appliance layers and positions, which works but cannot distinguish a missing tile from an empty one. |
 | **Blueprints** | Not emitted. |
 | **`broken` / `inactive`** | Emitted but never observed. |
+
+### Closed since the freeze
+
+These were listed as gaps and have since been settled from the recorded
+artifacts by `python/facts.py`. They are additive clarifications of existing
+fields, not schema changes, so `obs_0.1` is unchanged.
+
+| Former gap | Resolution |
+|---|---|
+| **Rotation zero** | `rot = atan2(MoveX, MoveY)`; 0 faces +z, 90 faces +x. |
+| **Provider infinity** | `maximum == 0` means infinite; `available` is a real stock count otherwise. |
+| **Mess** | Published as `Mess - *` appliances at `OccupancyLayer.Floor`. |
 
 ---
 

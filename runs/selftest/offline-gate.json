@@ -1,0 +1,606 @@
+{
+  "checks": [
+    {
+      "detail": "187 steady samples, median 0.21 deg, p90 3.29 deg, 4/4 quadrants",
+      "group": "facts",
+      "name": "rotation zero resolved",
+      "passed": true
+    },
+    {
+      "detail": "plate stacks report maximum [[4], [4]]",
+      "group": "facts",
+      "name": "finite provider reports a non-zero maximum",
+      "passed": true
+    },
+    {
+      "detail": "5 infinite providers, maxima [(0,)]",
+      "group": "facts",
+      "name": "infinite provider reports maximum 0, not a negative sentinel",
+      "passed": true
+    },
+    {
+      "detail": "['Mess - Customer 1', 'Mess - Customer 2', 'Mess - Kitchen 1'] at layer 2, off-grid positions",
+      "group": "facts",
+      "name": "mess is published as a floor-layer appliance",
+      "passed": true
+    },
+    {
+      "detail": "1473 unresolved, 0 resolved",
+      "group": "facts",
+      "name": "golden: groups[].table never resolves",
+      "passed": true
+    },
+    {
+      "detail": "0 appliances carried is_table",
+      "group": "facts",
+      "name": "golden: is_table is never emitted",
+      "passed": true
+    },
+    {
+      "detail": "823 of 823 seated group frames sit exactly on a table appliance",
+      "group": "facts",
+      "name": "golden: seated group position locates its table",
+      "passed": true
+    },
+    {
+      "detail": "731 unresolved, 0 resolved",
+      "group": "facts",
+      "name": "smoke: groups[].table never resolves",
+      "passed": true
+    },
+    {
+      "detail": "0 appliances carried is_table",
+      "group": "facts",
+      "name": "smoke: is_table is never emitted",
+      "passed": true
+    },
+    {
+      "detail": "421 of 421 seated group frames sit exactly on a table appliance",
+      "group": "facts",
+      "name": "smoke: seated group position locates its table",
+      "passed": true
+    },
+    {
+      "detail": "17 appliance names span [2, 3] generations",
+      "group": "facts",
+      "name": "golden: appliance entity IDs are recycled",
+      "passed": true
+    },
+    {
+      "detail": "14 appliance names span [2] generations",
+      "group": "facts",
+      "name": "smoke: appliance entity IDs are recycled",
+      "passed": true
+    },
+    {
+      "detail": "layer 2: ['Mess - Customer 1', 'Mess - Customer 2', 'Mess - Kitchen 1', 'Mop Water', 'Nameplate', 'Practice Mode Trigger']",
+      "group": "facts",
+      "name": "only floor-layer entities are walkable candidates",
+      "passed": true
+    },
+    {
+      "detail": "3 deliveries, furthest stand 1.024 of 1.4",
+      "group": "facts",
+      "name": "recorded deliveries respect the reach limit",
+      "passed": true
+    },
+    {
+      "detail": "(0.0, 1.0)",
+      "group": "geometry",
+      "name": "rot 0 faces +z",
+      "passed": true
+    },
+    {
+      "detail": "(1.0, 0.0)",
+      "group": "geometry",
+      "name": "rot 90 faces +x",
+      "passed": true
+    },
+    {
+      "detail": "round trip within 1e-6 degrees",
+      "group": "geometry",
+      "name": "heading inverts facing",
+      "passed": true
+    },
+    {
+      "detail": "0.7",
+      "group": "geometry",
+      "name": "interaction point sits one offset ahead",
+      "passed": true
+    },
+    {
+      "detail": "['bin', 'cabinet', 'chair', 'cook', 'surface', 'table', 'wash']",
+      "group": "geometry",
+      "name": "steak layout resolves its roles",
+      "passed": true
+    },
+    {
+      "detail": "1 meat, 1 plate",
+      "group": "geometry",
+      "name": "meat and plate providers are found",
+      "passed": true
+    },
+    {
+      "detail": "10 of 10",
+      "group": "geometry",
+      "name": "every working appliance has an approach pose",
+      "passed": true
+    },
+    {
+      "detail": "10 of 10",
+      "group": "geometry",
+      "name": "every working appliance is routable",
+      "passed": true
+    },
+    {
+      "detail": "max 1.061 of 1.1",
+      "group": "geometry",
+      "name": "planned poses stay inside the reach limit",
+      "passed": true
+    },
+    {
+      "detail": "min 0.339 above 0.15",
+      "group": "geometry",
+      "name": "planned poses disambiguate their target",
+      "passed": true
+    },
+    {
+      "detail": "Table - Large",
+      "group": "geometry",
+      "name": "a seated group resolves to a table appliance",
+      "passed": true
+    },
+    {
+      "detail": "2 chairs",
+      "group": "geometry",
+      "name": "the table has adjacent chairs",
+      "passed": true
+    },
+    {
+      "detail": "3 of 3",
+      "group": "geometry",
+      "name": "recorded human delivery stances pass the aim model",
+      "passed": true
+    },
+    {
+      "detail": "tile (4, -6)",
+      "group": "geometry",
+      "name": "a blocked tile is not routable as a goal",
+      "passed": true
+    },
+    {
+      "detail": "Meat -> Steak - Rare -> Steak - Medium -> Steak - Well-done -> Steak - Burned",
+      "group": "steak",
+      "name": "chain runs raw to burned",
+      "passed": true
+    },
+    {
+      "detail": "('Steak - Rare', 'Steak - Medium', 'Steak - Well-done')",
+      "group": "steak",
+      "name": "only the three doneness states are servable",
+      "passed": true
+    },
+    {
+      "detail": "['boned', 'plain', 'thick', 'thin']",
+      "group": "steak",
+      "name": "every cut is a well-formed chain",
+      "passed": true
+    },
+    {
+      "detail": "1.3333 versus 1.3333",
+      "group": "steak",
+      "name": "measured rate reproduces the starting-appliance multiplier",
+      "passed": true
+    },
+    {
+      "detail": "1.3333",
+      "group": "steak",
+      "name": "seconds to the next stage is progress arithmetic",
+      "passed": true
+    },
+    {
+      "detail": "17.33s, estimated=True",
+      "group": "steak",
+      "name": "time to ruin sums the remaining stages and says it is a prior",
+      "passed": true
+    },
+    {
+      "detail": "None",
+      "group": "steak",
+      "name": "a plated dish has no time to ruin",
+      "passed": true
+    },
+    {
+      "detail": "plain",
+      "group": "steak",
+      "name": "the recorded steak day is recognised as steak",
+      "passed": true
+    },
+    {
+      "detail": "None",
+      "group": "steak",
+      "name": "the recorded burger day is not recognised as steak",
+      "passed": true
+    },
+    {
+      "detail": "missing [] []",
+      "group": "steak",
+      "name": "every steak name resolves on the pinned build",
+      "passed": true
+    },
+    {
+      "detail": "12 missing items",
+      "group": "steak",
+      "name": "a missing name is a loud failure",
+      "passed": true
+    },
+    {
+      "detail": "4",
+      "group": "steak",
+      "name": "the plate stack reports finite stock",
+      "passed": true
+    },
+    {
+      "detail": "1000000",
+      "group": "steak",
+      "name": "an infinite provider is not treated as empty",
+      "passed": true
+    },
+    {
+      "detail": "success: holding Meat",
+      "group": "options",
+      "name": "acquire picks up the raw cut",
+      "passed": true
+    },
+    {
+      "detail": "success: placed on Hob - Starting",
+      "group": "options",
+      "name": "place puts the cut on the hob",
+      "passed": true
+    },
+    {
+      "detail": "success: Steak - Rare",
+      "group": "options",
+      "name": "watch_cook lifts at the first servable stage",
+      "passed": true
+    },
+    {
+      "detail": "success: Steak - Plated",
+      "group": "options",
+      "name": "plating a cooked steak yields the plated dish",
+      "passed": true
+    },
+    {
+      "detail": "success: placed on Countertop",
+      "group": "options",
+      "name": "a finished dish can be buffered on a counter",
+      "passed": true
+    },
+    {
+      "detail": "invalidated: Hob - Starting is empty",
+      "group": "options",
+      "name": "watching an empty hob is invalidated, not failed",
+      "passed": true
+    },
+    {
+      "detail": "invalidated: nothing held",
+      "group": "options",
+      "name": "placing with empty hands is invalid at plan time",
+      "passed": true
+    },
+    {
+      "detail": "timeout: after 0s",
+      "group": "options",
+      "name": "a timed-out option reports timeout",
+      "passed": true
+    },
+    {
+      "detail": "{'move': (0.0, 0.0), 'grab': False, 'interact': False, 'stop': False, 'ready': False}",
+      "group": "options",
+      "name": "the neutral action releases every control",
+      "passed": true
+    },
+    {
+      "detail": "100000",
+      "group": "options",
+      "name": "a grab cycle presses then releases",
+      "passed": true
+    },
+    {
+      "detail": "{'move': (0.0, 0.0), 'grab': False, 'interact': False, 'stop': False, 'ready': False}",
+      "group": "options",
+      "name": "a paused frame produces neutral input",
+      "passed": true
+    },
+    {
+      "detail": "28 fields",
+      "group": "model",
+      "name": "the model emits an obs_0.1-shaped frame",
+      "passed": true
+    },
+    {
+      "detail": "burger layout rejected",
+      "group": "model",
+      "name": "the model refuses a layout for another recipe",
+      "passed": true
+    },
+    {
+      "detail": "Meat -> Steak - Rare -> Steak - Medium -> Steak - Well-done -> Steak - Burned",
+      "group": "model",
+      "name": "the cook chain visits every stage in order",
+      "passed": true
+    },
+    {
+      "detail": "tile (4, -6)",
+      "group": "model",
+      "name": "blocked tiles reject the chef",
+      "passed": true
+    },
+    {
+      "detail": "start tile (3, 0)",
+      "group": "model",
+      "name": "the chef starts somewhere with room to walk",
+      "passed": true
+    },
+    {
+      "detail": "2.10 units in 60 frames going (0, 1)",
+      "group": "model",
+      "name": "holding a direction moves the chef",
+      "passed": true
+    },
+    {
+      "detail": "0.93 of 4.0 units/s",
+      "group": "model",
+      "name": "modelled speed is inside the measured envelope",
+      "passed": true
+    },
+    {
+      "detail": "0.22 units into (1, 0)",
+      "group": "model",
+      "name": "an appliance stops the chef",
+      "passed": true
+    },
+    {
+      "detail": "[4, 4, 4]",
+      "group": "service",
+      "name": "the reference controller serves every group",
+      "passed": true
+    },
+    {
+      "detail": "[0, 0, 0]",
+      "group": "service",
+      "name": "no group is lost",
+      "passed": true
+    },
+    {
+      "detail": "[0, 0, 0]",
+      "group": "service",
+      "name": "nothing is ruined",
+      "passed": true
+    },
+    {
+      "detail": "[4, 4]",
+      "group": "service",
+      "name": "one plate still completes the day through the wash loop",
+      "passed": true
+    },
+    {
+      "detail": "[(7, 0), (7, 0)]",
+      "group": "service",
+      "name": "a saturated day loses nobody",
+      "passed": true
+    },
+    {
+      "detail": "[0, 0]",
+      "group": "service",
+      "name": "cooking to well-done never burns a steak",
+      "passed": true
+    },
+    {
+      "detail": "[(6, 0, 0, 1), (6, 0, 0, 1)]",
+      "group": "service",
+      "name": "scarce plates under saturation: nothing lost, nothing ruined, no option storm",
+      "passed": true
+    },
+    {
+      "detail": "[(6, 0, 0, 1), (6, 0, 0, 1)]",
+      "group": "service",
+      "name": "scarce plates while watching the hob: nothing lost, nothing ruined, no option storm",
+      "passed": true
+    },
+    {
+      "detail": "[(4, 0, 0, 1), (4, 0, 0, 1)]",
+      "group": "service",
+      "name": "a short crowded day: nothing lost, nothing ruined, no option storm",
+      "passed": true
+    },
+    {
+      "detail": "[7, 7] versus [6, 6] watching",
+      "group": "service",
+      "name": "working while a steak cooks serves at least as many",
+      "passed": true
+    },
+    {
+      "detail": "0-2",
+      "group": "capability",
+      "name": "an exact context is reported as exact",
+      "passed": true
+    },
+    {
+      "detail": "0.900",
+      "group": "capability",
+      "name": "the success rate is the measured one",
+      "passed": true
+    },
+    {
+      "detail": "0.596 < 0.900",
+      "group": "capability",
+      "name": "the confidence bound is below the point estimate",
+      "passed": true
+    },
+    {
+      "detail": "[0.438, 1.000]",
+      "group": "capability",
+      "name": "three successes do not imply certainty",
+      "passed": true
+    },
+    {
+      "detail": "None",
+      "group": "capability",
+      "name": "an unmeasured option reports nothing rather than a guess",
+      "passed": true
+    },
+    {
+      "detail": "1 rows",
+      "group": "capability",
+      "name": "a saved registry round-trips",
+      "passed": true
+    },
+    {
+      "detail": "capability_0.0 rejected",
+      "group": "capability",
+      "name": "a mismatched registry schema is refused",
+      "passed": true
+    },
+    {
+      "detail": "[4]",
+      "group": "surrogate",
+      "name": "the surrogate serves the same number of groups as the model",
+      "passed": true
+    },
+    {
+      "detail": "[0]",
+      "group": "surrogate",
+      "name": "the surrogate loses nobody",
+      "passed": true
+    },
+    {
+      "detail": "[1.0]",
+      "group": "surrogate",
+      "name": "every transition is inside the calibrated support",
+      "passed": true
+    },
+    {
+      "detail": "0.0",
+      "group": "surrogate",
+      "name": "an uncalibrated surrogate reports zero support",
+      "passed": true
+    },
+    {
+      "detail": "0.207 < 0.886",
+      "group": "surrogate",
+      "name": "more evidence buys a higher confidence bound",
+      "passed": true
+    },
+    {
+      "detail": "147 vs 147",
+      "group": "env",
+      "name": "observation length matches the space",
+      "passed": true
+    },
+    {
+      "detail": "all finite",
+      "group": "env",
+      "name": "observation is finite",
+      "passed": true
+    },
+    {
+      "detail": "range [-0.300, 5.000]",
+      "group": "env",
+      "name": "observation is inside the declared bounds",
+      "passed": true
+    },
+    {
+      "detail": "['ack_command', 'cmds_applied', 'cmds_dropped']",
+      "group": "env",
+      "name": "info carries command receipts",
+      "passed": true
+    },
+    {
+      "detail": "[0, 0, 0, 0, 0, 1]",
+      "group": "env",
+      "name": "sampled action is inside the action space",
+      "passed": true
+    },
+    {
+      "detail": "{'move': (-1.0, 1.0), 'grab': True, 'interact': False, 'stop': True, 'ready': False}",
+      "group": "env",
+      "name": "action decoding maps axes and buttons",
+      "passed": true
+    },
+    {
+      "detail": "[0, 4, 1, 0, 1, 0]",
+      "group": "env",
+      "name": "action encoding round-trips",
+      "passed": true
+    },
+    {
+      "detail": "{147}",
+      "group": "env",
+      "name": "observation length is constant",
+      "passed": true
+    },
+    {
+      "detail": "min -0.000 max -0.000",
+      "group": "env",
+      "name": "rewards are finite and bounded",
+      "passed": true
+    },
+    {
+      "detail": "max -0.000",
+      "group": "env",
+      "name": "random actions never produce a positive reward by accident",
+      "passed": true
+    },
+    {
+      "detail": "identical first observations",
+      "group": "env",
+      "name": "reset is reproducible for a fixed seed on the mock backend",
+      "passed": true
+    },
+    {
+      "detail": "[147]",
+      "group": "env",
+      "name": "the random-action soak keeps one observation shape",
+      "passed": true
+    },
+    {
+      "detail": "2 episodes, {'game_over': 2}",
+      "group": "env",
+      "name": "the random-action soak reaches a terminal state",
+      "passed": true
+    },
+    {
+      "detail": "['game_over']",
+      "group": "env",
+      "name": "random play does not complete the day",
+      "passed": true
+    },
+    {
+      "detail": "['day_complete', 'day_complete']",
+      "group": "env",
+      "name": "the reference controller finishes the day through the API",
+      "passed": true
+    },
+    {
+      "detail": "[3.95, 3.95]",
+      "group": "env",
+      "name": "the reference controller scores above random",
+      "passed": true
+    },
+    {
+      "detail": "147 names, 147 values",
+      "group": "env",
+      "name": "the encoding has one name per slot",
+      "passed": true
+    },
+    {
+      "detail": "[]",
+      "group": "env",
+      "name": "the encoding carries no affordance or future field",
+      "passed": true
+    }
+  ],
+  "failed": 0,
+  "total": 100
+}

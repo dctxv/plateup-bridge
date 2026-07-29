@@ -157,8 +157,9 @@ class World:
 
 
 class ObservationClient:
-    def __init__(self, bridge=None):
+    def __init__(self, bridge=None, announce=True):
         self.b = bridge or PlateUpBridge()
+        self.announce = announce
         self.appliance_names = {}
         self.item_names = {}
         self.process_names = {}
@@ -185,14 +186,24 @@ class ObservationClient:
 
     def recv(self):
         while True:
-            msg = self.b.recv()
-            kind = msg.get("kind")
-            if kind == "dict":
-                self._load_dict(msg)
-                continue
-            if kind == "obs":
-                self._load_obs(msg)
-                return self.world
+            world = self.feed(self.b.recv())
+            if world is not None:
+                return world
+
+    def feed(self, msg):
+        """Apply one bridge message; return the world if it was an obs.
+
+        Separated from recv() so recorded files can be replayed through the
+        same resolution path as a live connection, with no bridge attached.
+        """
+        kind = msg.get("kind")
+        if kind == "dict":
+            self._load_dict(msg)
+            return None
+        if kind == "obs":
+            self._load_obs(msg)
+            return self.world
+        return None
 
     # --- parsing ---
 
@@ -200,10 +211,12 @@ class ObservationClient:
         self.appliance_names = {int(k): v for k, v in msg.get("appliances", {}).items()}
         self.item_names = {int(k): v for k, v in msg.get("items", {}).items()}
         self.process_names = {int(k): v for k, v in msg.get("processes", {}).items()}
-        print(
-            f"dict: {len(self.appliance_names)} appliances, "
-            f"{len(self.item_names)} items, {len(self.process_names)} processes"
-        )
+        if self.announce:
+            print(
+                f"dict: {len(self.appliance_names)} appliances, "
+                f"{len(self.item_names)} items, "
+                f"{len(self.process_names)} processes"
+            )
 
     def _load_obs(self, m):
         w = self.world

@@ -1,10 +1,17 @@
-# PlateUp Bridge — Phase C
+# PlateUp Bridge
 
-Programmatic control of a PlateUp chef from Python. Movement, interaction, and game-state requests, over a named pipe.
+Programmatic control of a PlateUp chef from Python. Movement, interaction, and game-state requests, over a named pipe — plus the steak-service agent layers built on top of it.
 
 Verified integration and acceptance results are maintained in
 [`docs/verified-successes.md`](docs/verified-successes.md). Successful tests
 must be added there with their evidence; failed gates are retained separately.
+
+**Project 1 is fixed to the steak recipe** by scope decision, not by the
+benchmark, which has not been run. See
+[`docs/steak-decision.md`](docs/steak-decision.md). The agent layers
+(`kitchen`, `steak`, `options`, `service`, `capability`, `surrogate`, `encode`,
+`env`) pass a 100-check offline gate and have **never been run in the live
+game**; see [`docs/agent-architecture.md`](docs/agent-architecture.md).
 
 ## Build
 
@@ -67,8 +74,11 @@ To verify that observations continue while the game is paused:
 python python/observe.py rate
 ```
 
-Pause PlateUp for 30 seconds. The expected result is continued `~10 obs/s`,
-`paused=True`, and `OK`; `0 obs/s | STALL` means the simulation group stopped.
+Pause PlateUp for 30 seconds. The expected result is a continued stream at
+roughly `25-30 obs/s`, `paused=True`, and `OK`; `0 obs/s | STALL` means the
+simulation group stopped. The tick divisor suggests 10 Hz but the simulation
+group runs at about 180 ticks per second, so the wall-clock rate has to be
+measured rather than assumed.
 
 The observer deliberately does not publish `CScheduledCustomer`. Its future
 arrival times and group sizes are hidden information under the experiment
@@ -88,7 +98,7 @@ The first frame is a schema/provenance handshake:
 ```
 
 It is followed by one `dict` frame containing appliance, item, and process name
-maps. Observations then arrive at approximately 10 Hz:
+maps. Observations then arrive every sixth simulation tick, measured at 25-30 Hz:
 
 ```json
 {"kind":"obs","protocol":1,"tick":8412,
@@ -262,15 +272,96 @@ SecondaryAction1 to reload the pre-Practice autosave; `QuitSection` cannot be
 used for cycling because `StartPractice` is only valid during restaurant
 preparation.
 
+## Steak agent
+
+The layers between the bridge and a policy. All of them resolve item,
+appliance and process identities by name through the connection's `dict`
+frame, never by hardcoded ID.
+
+| Module | What it is |
+| --- | --- |
+| `python/steak.py` | The steak chain, doneness policy, and checked name resolution |
+| `python/kitchen.py` | Reach, aim, occupancy, routes, and appliance roles |
+| `python/options.py` | Options: navigate, acquire, place, operate, serve, watch-cook, bin, start-day |
+| `python/service.py` | Reference planner and the loop that runs it, live or offline |
+| `python/capability.py` | Measured option durations and failure rates |
+| `python/surrogate.py` | Semi-MDP over options, calibrated from the registry |
+| `python/encode.py` | Fixed-size observation vector |
+| `python/env.py` | Gymnasium-compatible environment; gymnasium itself is optional |
+| `python/mockgame.py` | Tick-level **model** of the game, for running offline |
+| `python/facts.py` | Re-derives observation facts from the recorded artifacts |
+| `python/selftest.py` | The offline gate over all of the above |
+
+`service.py` and the motor control in `options.py` are a **scripted baseline**,
+not the agent. Specification §2.3 disallows scripted cook-plate-serve control
+and deterministic pathfinding inside a scored run. They exist to build training
+data, to measure the capability registry, and to be the baseline a learned
+policy is compared against.
+
+The interaction model is worth stating once, because it drives everything:
+`AttemptInteraction` projects a point 0.7 units ahead along the **movement**
+vector and takes the nearest interactive within 0.7 of it, so aiming and
+walking are the same channel and a stance is only useful if the intended
+target is also the nearest thing to that point.
+
+### Offline, no game required
+
+```powershell
+python python\selftest.py
+```
+
+```powershell
+python python\facts.py
+```
+
+```powershell
+python python\service.py mock --episodes 8
+```
+
+The mock accepts pressure knobs, which is how three planner deadlocks were
+found without a game running: `--plates`, `--groups`, `--interval`,
+`--day-length`, `--min-stage` (1 Rare, 2 Medium, 3 Well-done) and
+`--watch-hob` (stand at the hob for the whole cook instead of working through
+it).
+
+```powershell
+python python\env.py check
+```
+
+```powershell
+python python\env.py soak --steps 20000
+```
+
+```powershell
+python python\surrogate.py compare runs\capability\mock-reference.json
+```
+
+`mockgame` is a model built from the two recordings, not the game. A pass means
+the code is coherent and agrees with those recordings; it is not evidence about
+PlateUp, and every command above says so in its output.
+
+### Live
+
+```powershell
+python python\service.py run --capability runs\capability\live.json
+```
+
+Requires PlateUp in a restaurant with the mod loaded and F9 override on.
+
 ## Next
 
-- Record matched hand-played burger and steak Day 1 sessions under the
-  benchmark protocol: 6 to 8 accepted sessions per recipe, alternating arms,
-  each recording running past the end of the day.
-- Run `demo_analyze.py benchmark` and log the recipe decision in the ledger.
-- Define the Gymnasium wrapper only after the recipe benchmark is accepted.
-  Real-game motor training remains restricted to 1x.
+1. **Run the agent live.** Nothing in the steak stack has touched PlateUp. The
+   first live `service.py run` inside Practice, writing a capability registry
+   from real trials, is what turns any of it into evidence.
+2. Compare the live registry against `runs/capability/mock-reference.json`.
+   That difference is the first honest measurement of how wrong the offline
+   model is, and the surrogate's §9.4 validation depends on it.
+3. Replace the scripted layers: `Option._drive` and the press logic (motor),
+   then `SteakPlanner.choose` (task). Real-game motor training remains
+   restricted to 1x.
+4. Optionally run the recipe benchmark and replace the scope decision with a
+   measurement.
 
-Still open and unrelated to the recipe gate: the 100,000-command formal soak
-remains FAIL/PENDING after one 600-frame position freeze, and must close before
-any unattended training run. The popup-capture transition soak is inconclusive.
+Still open: the 100,000-command formal soak remains FAIL/PENDING after one
+600-frame position freeze, and must close before any unattended training run.
+The popup-capture transition soak is inconclusive.

@@ -1,0 +1,405 @@
+{
+  "checks": [
+    {
+      "detail": "187 steady samples, median 0.21 deg, p90 3.29 deg, 4/4 quadrants",
+      "name": "rotation zero resolved",
+      "passed": true
+    },
+    {
+      "detail": "plate stacks report maximum [[4], [4]]",
+      "name": "finite provider reports a non-zero maximum",
+      "passed": true
+    },
+    {
+      "detail": "5 infinite providers, maxima [(0,)]",
+      "name": "infinite provider reports maximum 0, not a negative sentinel",
+      "passed": true
+    },
+    {
+      "detail": "['Mess - Customer 1', 'Mess - Customer 2', 'Mess - Kitchen 1'] at layer 2, off-grid positions",
+      "name": "mess is published as a floor-layer appliance",
+      "passed": true
+    },
+    {
+      "detail": "1473 unresolved, 0 resolved",
+      "name": "golden: groups[].table never resolves",
+      "passed": true
+    },
+    {
+      "detail": "0 appliances carried is_table",
+      "name": "golden: is_table is never emitted",
+      "passed": true
+    },
+    {
+      "detail": "823 of 823 seated group frames sit exactly on a table appliance",
+      "name": "golden: seated group position locates its table",
+      "passed": true
+    },
+    {
+      "detail": "731 unresolved, 0 resolved",
+      "name": "smoke: groups[].table never resolves",
+      "passed": true
+    },
+    {
+      "detail": "0 appliances carried is_table",
+      "name": "smoke: is_table is never emitted",
+      "passed": true
+    },
+    {
+      "detail": "421 of 421 seated group frames sit exactly on a table appliance",
+      "name": "smoke: seated group position locates its table",
+      "passed": true
+    },
+    {
+      "detail": "17 appliance names span [2, 3] generations",
+      "name": "golden: appliance entity IDs are recycled",
+      "passed": true
+    },
+    {
+      "detail": "14 appliance names span [2] generations",
+      "name": "smoke: appliance entity IDs are recycled",
+      "passed": true
+    },
+    {
+      "detail": "layer 2: ['Mess - Customer 1', 'Mess - Customer 2', 'Mess - Kitchen 1', 'Mop Water', 'Nameplate', 'Practice Mode Trigger']",
+      "name": "only floor-layer entities are walkable candidates",
+      "passed": true
+    },
+    {
+      "detail": "3 deliveries, furthest stand 1.024 of 1.4",
+      "name": "recorded deliveries respect the reach limit",
+      "passed": true
+    }
+  ],
+  "delivery_poses": {
+    "conclusion": "every recorded delivery stood inside the 1.4 unit reach limit; some aimed at the table and some at an occupied chair",
+    "deliveries": 3,
+    "max_stand_distance": 1.024,
+    "poses": [
+      {
+        "interaction_point_to_table": 0.227,
+        "rot": 347.84,
+        "stand": [
+          -3.666,
+          -1.814
+        ],
+        "stand_distance": 0.88,
+        "table": [
+          -4,
+          -1
+        ]
+      },
+      {
+        "interaction_point_to_table": 1.051,
+        "rot": 243.06,
+        "stand": [
+          -3.282,
+          -1.73
+        ],
+        "stand_distance": 1.024,
+        "table": [
+          -4,
+          -1
+        ]
+      },
+      {
+        "interaction_point_to_table": 0.238,
+        "rot": 340.44,
+        "stand": [
+          -3.585,
+          -1.814
+        ],
+        "stand_distance": 0.914,
+        "table": [
+          -4,
+          -1
+        ]
+      }
+    ],
+    "reach_limit": 1.4
+  },
+  "entity_stability": {
+    "golden": {
+      "conclusion": "fixed appliances are destroyed and recreated at the preparation to service boundary; cache appliances by (aid, tile), never by entity ID across a phase change",
+      "distinct_generation_counts": [
+        2,
+        3
+      ],
+      "names_with_multiple_generations": {
+        "Bin - Starting": 2,
+        "Blueprint": 2,
+        "Blueprint Cabinet": 2,
+        "Countertop": 2,
+        "Hob - Starting": 2,
+        "Internal Wall Piece": 2,
+        "Mess - Customer 1": 3,
+        "Nameplate": 2,
+        "Outdoor Movement Blocker": 2,
+        "Plate Stack - Starting": 2,
+        "Sink - Starting": 2,
+        "Source - Burger Buns": 2,
+        "Source - Burger Patty": 2,
+        "Street Piece": 2,
+        "Table - Large": 2,
+        "Wall Piece": 2,
+        "Wheelie Bin": 2
+      },
+      "stable_key": "(aid, round(x), round(z))",
+      "stable_key_slots": 118
+    },
+    "smoke": {
+      "conclusion": "fixed appliances are destroyed and recreated at the preparation to service boundary; cache appliances by (aid, tile), never by entity ID across a phase change",
+      "distinct_generation_counts": [
+        2
+      ],
+      "names_with_multiple_generations": {
+        "Bin - Starting": 2,
+        "Blueprint Cabinet": 2,
+        "Countertop": 2,
+        "Hob - Starting": 2,
+        "Internal Wall Piece": 2,
+        "Nameplate": 2,
+        "Outdoor Movement Blocker": 2,
+        "Plate Stack - Starting": 2,
+        "Sink - Starting": 2,
+        "Source - Meat": 2,
+        "Street Piece": 2,
+        "Table - Large": 2,
+        "Wall Piece": 2,
+        "Wheelie Bin": 2
+      },
+      "stable_key": "(aid, round(x), round(z))",
+      "stable_key_slots": 95
+    }
+  },
+  "mess": {
+    "example_positions": {
+      "Mess - Customer 1": [
+        -2.889,
+        -2.192
+      ],
+      "Mess - Customer 2": [
+        -2.047,
+        -1.774
+      ],
+      "Mess - Kitchen 1": [
+        2.849,
+        1.913
+      ]
+    },
+    "grid_aligned": false,
+    "layer": 2,
+    "names": {
+      "Mess - Customer 1": 628,
+      "Mess - Customer 2": 403,
+      "Mess - Kitchen 1": 2674
+    }
+  },
+  "occupancy_layers": {
+    "golden": {
+      "0": [
+        "Advanced Build Loadout Crane In Game",
+        "Bin - Starting",
+        "Blueprint",
+        "Blueprint Cabinet",
+        "Blueprint Letter",
+        "Chair",
+        "Countertop",
+        "Ghost Chair",
+        "Hob - Starting",
+        "Internal Wall Piece",
+        "Outdoor Movement Blocker",
+        "Plate Stack - Starting",
+        "Sink - Starting",
+        "Source - Burger Buns",
+        "Source - Burger Patty",
+        "Street Piece",
+        "Table - Large",
+        "Wall Piece",
+        "Wheelie Bin"
+      ],
+      "2": [
+        "Mess - Customer 1",
+        "Mess - Customer 2",
+        "Mess - Kitchen 1",
+        "Mop Water",
+        "Nameplate",
+        "Practice Mode Trigger"
+      ]
+    },
+    "smoke": {
+      "0": [
+        "Advanced Build Loadout Crane In Game",
+        "Bin - Starting",
+        "Blueprint Cabinet",
+        "Blueprint Letter",
+        "Chair",
+        "Countertop",
+        "Ghost Chair",
+        "Hob - Starting",
+        "Internal Wall Piece",
+        "Outdoor Movement Blocker",
+        "Plate Stack - Starting",
+        "Sink - Starting",
+        "Source - Meat",
+        "Street Piece",
+        "Table - Large",
+        "Wall Piece",
+        "Wheelie Bin"
+      ],
+      "2": [
+        "Nameplate",
+        "Practice Mode Trigger"
+      ]
+    }
+  },
+  "providers": {
+    "golden": {
+      "Plate Stack - Starting": {
+        "available_values": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "finite": true,
+        "maximum": [
+          4
+        ],
+        "provides": [
+          "Plate"
+        ]
+      },
+      "Sink - Starting": {
+        "available_values": [
+          0
+        ],
+        "finite": false,
+        "maximum": [
+          0
+        ],
+        "provides": [
+          "Water"
+        ]
+      },
+      "Source - Burger Buns": {
+        "available_values": [
+          0
+        ],
+        "finite": false,
+        "maximum": [
+          0
+        ],
+        "provides": [
+          "Burger Bun"
+        ]
+      },
+      "Source - Burger Patty": {
+        "available_values": [
+          0
+        ],
+        "finite": false,
+        "maximum": [
+          0
+        ],
+        "provides": [
+          "Burger Patty - Raw"
+        ]
+      }
+    },
+    "smoke": {
+      "Plate Stack - Starting": {
+        "available_values": [
+          4
+        ],
+        "finite": true,
+        "maximum": [
+          4
+        ],
+        "provides": [
+          "Plate"
+        ]
+      },
+      "Sink - Starting": {
+        "available_values": [
+          0
+        ],
+        "finite": false,
+        "maximum": [
+          0
+        ],
+        "provides": [
+          "Water"
+        ]
+      },
+      "Source - Meat": {
+        "available_values": [
+          0
+        ],
+        "finite": false,
+        "maximum": [
+          0
+        ],
+        "provides": [
+          "Meat"
+        ]
+      }
+    }
+  },
+  "rotation_zero": {
+    "available": true,
+    "conclusion": "rot = atan2(MoveX, MoveY) in degrees; rot 0 faces +z, rot 90 faces +x. Residual error while the commanded direction is still changing is turn latency, not a convention mismatch.",
+    "median_error_degrees": 0.6625045272616603,
+    "quadrant_counts": {
+      "0": 41,
+      "1": 29,
+      "2": 72,
+      "3": 45
+    },
+    "quadrants_covered": 4,
+    "samples": 280,
+    "steady_max_error_degrees": 19.828000000000003,
+    "steady_median_error_degrees": 0.21360325983226858,
+    "steady_p90_error_degrees": 3.294838302072037,
+    "steady_samples": 187,
+    "transient_max_error_degrees": 120.474
+  },
+  "sources": {
+    "golden": {
+      "bridge": "0.2.4",
+      "frames": 2544,
+      "mod_hash": "a95958844ee81fd6515e7e93a3cd3fe5822a2b75d86d18192675e5acecfea1c4",
+      "path": "runs\\golden\\obs_0.1_day1.jsonl"
+    },
+    "smoke": {
+      "bridge": "0.3.0",
+      "demo_frames": 9334,
+      "frames": 854,
+      "mod_hash": "164a7ae4f2c796e3db0d7d8f7622daae49450ad515ef0319e320f214996af8d0",
+      "path": "runs\\demos\\smoke.jsonl"
+    }
+  },
+  "table_linkage": {
+    "golden": {
+      "assigned_table_resolved": 0,
+      "assigned_table_unresolved": 1473,
+      "conclusion": "groups[].table cannot be resolved by a client; once a group has stopped being seated its position is exactly its table's position, so the group locates its own table",
+      "is_table_entries": 0,
+      "max_group_to_nearest_table": 0.0,
+      "median_group_to_nearest_table": 0.0,
+      "seated_group_exactly_on_a_table_appliance": 823,
+      "seated_group_frames": 823
+    },
+    "smoke": {
+      "assigned_table_resolved": 0,
+      "assigned_table_unresolved": 731,
+      "conclusion": "groups[].table cannot be resolved by a client; once a group has stopped being seated its position is exactly its table's position, so the group locates its own table",
+      "is_table_entries": 0,
+      "max_group_to_nearest_table": 0.0,
+      "median_group_to_nearest_table": 0.0,
+      "seated_group_exactly_on_a_table_appliance": 421,
+      "seated_group_frames": 421
+    }
+  }
+}
