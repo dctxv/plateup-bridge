@@ -24,6 +24,7 @@ The suite is deliberately grouped so a failure names the layer that broke:
     learning     dataset construction, cloning, and the evaluation harness
     antihack     the specification's reward-hacking tests
     manifest     run manifests and their artifact re-check
+    livecheck    the live verifier, replayed against both recordings
 """
 
 import argparse
@@ -40,6 +41,7 @@ import env as ENV
 import evaluate as EVAL
 import facts
 import kitchen as K
+import livecheck
 import manifest
 import mockgame
 import options as O
@@ -897,6 +899,76 @@ def test_manifest(suite):
                     str([status for _t, status, _d in results]))
 
 
+def _replay_livecheck(path, interval):
+    """Drive the live checker from a recording, as the live loop would."""
+    checker = livecheck.LiveCheck()
+    client = ObservationClient(announce=False)
+    clock = 0.0
+    with open(path, encoding="utf-8") as source:
+        for line in source:
+            line = line.strip()
+            if not line:
+                continue
+            message = json.loads(line)
+            if message.get("kind") == "hello":
+                class _Shim:
+                    pass
+                client.b = _Shim()
+                client.b.hello = message
+                checker.handshake(client)
+                continue
+            world = client.feed(message)
+            if world is None:
+                if message.get("kind") == "dict":
+                    checker.dictionary(client)
+                continue
+            clock += interval
+            checker.observe(world, clock)
+    return checker
+
+
+def test_livecheck(suite):
+    suite.section("livecheck")
+
+    steak = _replay_livecheck(SMOKE, 0.035)
+    states = {key: check.state for key, check in steak.checks.items()}
+    suite.check("the live checker finds no contradiction in the steak day",
+                livecheck.FAIL not in states.values(),
+                str({k: v for k, v in states.items()
+                     if v == livecheck.FAIL}) or "no failures")
+    suite.check("it confirms the rotation convention from displacement alone",
+                states["rotation_zero"] == livecheck.PASS,
+                steak.checks["rotation_zero"].detail)
+    suite.check("it confirms the provider and table findings live",
+                states["provider_infinity"] == livecheck.PASS
+                and states["table_unresolvable"] == livecheck.PASS
+                and states["group_locates_table"] == livecheck.PASS,
+                "provider, table linkage and group position")
+    suite.check("it confirms entity recycling across the day boundary",
+                states["entity_recycling"] == livecheck.PASS,
+                steak.checks["entity_recycling"].detail)
+    suite.check("it leaves untriggered checks PENDING rather than passing them",
+                states["cook_timings"] == livecheck.PENDING
+                and states["wash_rate"] == livecheck.PENDING,
+                "the smoke recording never cooked or washed")
+
+    # The golden trace was recorded with bridge 0.2.4, so the provenance check
+    # must fail on it. A checker that passed everything would be useless.
+    burger = _replay_livecheck(GOLDEN, 0.044)
+    suite.check("it rejects a recording made with a different mod build",
+                burger.checks["mod_hash"].state == livecheck.FAIL,
+                burger.checks["mod_hash"].detail[:60])
+    suite.check("it still confirms the build-independent findings",
+                burger.checks["floor_mess"].state == livecheck.PASS
+                and burger.checks["group_locates_table"].state
+                == livecheck.PASS,
+                "floor mess and group position hold on the burger day too")
+    suite.check("its report and payload are well formed",
+                "livecheck_0.1" in steak.report()
+                and len(steak.payload()["checks"]) == len(steak.checks),
+                f"{len(steak.payload()['checks'])} checks serialised")
+
+
 GROUPS = (
     ("facts", test_facts),
     ("geometry", test_geometry),
@@ -911,6 +983,7 @@ GROUPS = (
     ("learning", test_learning),
     ("antihack", test_antihack),
     ("manifest", test_manifest),
+    ("livecheck", test_livecheck),
 )
 
 

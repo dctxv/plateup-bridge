@@ -10,8 +10,9 @@ must be added there with their evidence; failed gates are retained separately.
 benchmark, which has not been run. See
 [`docs/steak-decision.md`](docs/steak-decision.md). The agent layers
 (`kitchen`, `steak`, `options`, `service`, `capability`, `surrogate`, `encode`,
-`env`) pass a 100-check offline gate and have **never been run in the live
-game**; see [`docs/agent-architecture.md`](docs/agent-architecture.md).
+`env`) pass a **146-check offline gate** and have **never been run in the
+live game**; see [`docs/agent-architecture.md`](docs/agent-architecture.md)
+and [How to test this](#how-to-test-this).
 
 ## Build
 
@@ -272,6 +273,128 @@ SecondaryAction1 to reload the pre-Practice autosave; `QuitSection` cannot be
 used for cycling because `StartPractice` is only valid during restaurant
 preparation.
 
+## How to test this
+
+Three tiers, cheapest first. Tier 1 needs nothing but Python. Tier 2 needs
+PlateUp but never takes control of it. Only tier 3 lets the agent drive.
+
+### Tier 1 - offline, no game, about two minutes
+
+```powershell
+python python\selftest.py
+```
+
+146 checks over geometry, the recipe graph, option lifecycles, the model, whole
+modelled days, the capability registry, the surrogate, the environment,
+preparation, the learning pipeline, reward hacking, run manifests, and the live
+verifier replayed against both recordings. Expect `OK -- 146 offline checks
+passed`.
+
+Then watch the scripted controller play modelled days, and push it until it
+breaks:
+
+```powershell
+python python\service.py mock --episodes 4
+```
+
+```powershell
+python python\service.py mock --episodes 3 --groups 10 --interval 9 --plates 1
+```
+
+Expect 4 of 4 groups served on a normal day and no losses under pressure. The
+pressure knobs are `--plates`, `--groups`, `--interval`, `--day-length`,
+`--min-stage` (1 Rare, 2 Medium, 3 Well-done), `--watch-hob`, `--preparation`
+and `--popup-seconds`. Three planner deadlocks were found this way.
+
+To see the learned policy and the diagnostics behind
+[`docs/phase-g-decision.md`](docs/phase-g-decision.md):
+
+```powershell
+python python\evaluate.py compare runs\policies\bc-goal.npz --episodes 8
+```
+
+```powershell
+python python\evaluate.py split runs\policies\bc-goal.npz --episodes 4
+```
+
+None of this is evidence about PlateUp. `mockgame` is a model built from the two
+recordings, and every command says so in its own output.
+
+### Tier 2 - live, read-only, five minutes of hand-play
+
+This is the tier that matters, because it is the one that can prove the offline
+work wrong. **Leave F9 OFF.** The tool sends only the neutral heartbeat the pipe
+already requires; it cannot move the chef or fail a restaurant.
+
+1. Back up your PlateUp save (specification section 1.1).
+2. Launch PlateUp and enter a **steak** restaurant. Check `Player.log` for
+   `[BRIDGE] input system online`.
+3. Run, then play normally:
+
+```powershell
+python python\livecheck.py --json runs\live\check.json
+```
+
+A live checklist refreshes every three seconds. Twenty-one falsifiable claims,
+each marked the moment its evidence arrives. To settle all of them: walk
+around, put a raw steak on a hob, let one reach Well-done, plate one, serve a
+customer, let them eat, wash the plate, and start a day while it runs.
+
+**PENDING is not a pass.** A check whose trigger never happened says so.
+
+The one to watch is `cook_timings`. The four steak stage durations are the only
+numbers in the project taken from the knowledge base and never observed, and
+this prints the measured rate against the prior. If it fails, the fix is
+`docs/steak-recipe.md` section 3 and `steak.CUTS`; nothing else depends on
+them, because the live controller reads `rate` directly.
+
+While you are there, record the day - it costs nothing extra and gives the
+project its first real steak demonstration:
+
+```powershell
+python python\demo_record.py record runs\demos\steak\day1-01.jsonl --recipe steak --scenario day1
+```
+
+```powershell
+python python\demo_record.py verify runs\demos\steak\day1-01.jsonl
+```
+
+```powershell
+python python\dataset.py demo runs\datasets\human.npz runs\demos\steak\day1-01.jsonl
+```
+
+### Tier 3 - live, the agent drives
+
+Only after tier 2 is clean. Start in **Practice** so a failure costs nothing.
+
+1. Enter Practice, press **F9**.
+2. Run for a few minutes with a hard time limit:
+
+```powershell
+python python\service.py run --minutes 3 --capability runs\capability\live.json
+```
+
+It refuses a kitchen that is not serving steak, waits for F9 rather than
+sending commands nobody is listening to, prints a status line, and releases
+every control on any exit. Ctrl+C is safe, and the mod's own watchdog zeroes
+input after 120 quiet ticks regardless.
+
+Watch for: does it walk to the meat source, cook, plate, deliver, and wash? The
+two most likely first failures are the aiming mode (`StopMoving` may not leave
+`Movement` intact - the controller flips it after three failed presses on its
+own) and route choices around chairs.
+
+When it ends it prints a capability table. Compare it with the model's:
+
+```powershell
+python python\manifest.py runs\manifests\live.json --artifact runs\capability\live.json --note "first live run"
+```
+
+That difference is the first honest measurement of how wrong `mockgame` is, and
+it is what the surrogate's section 9.4 validation needs. Log the result in
+[`docs/verified-successes.md`](docs/verified-successes.md) either way - the
+working agreement in `AGENTS.md` requires failures to be retained too.
+
 ## Steak agent
 
 The layers between the bridge and a policy. All of them resolve item,
@@ -290,6 +413,8 @@ frame, never by hardcoded ID.
 | `python/env.py` | Gymnasium-compatible environment; gymnasium itself is optional |
 | `python/mockgame.py` | Tick-level **model** of the game, for running offline |
 | `python/facts.py` | Re-derives observation facts from the recorded artifacts |
+| `python/livecheck.py` | Read-only live verification of every offline assumption |
+| `python/manifest.py` | Run manifests: code, schemas, build and artifact hashes |
 | `python/dataset.py` | Behaviour-cloning datasets, from demonstrations or the model |
 | `python/policy.py` | A goal-conditioned cloned policy; NumPy, no framework |
 | `python/dagger.py` | Labels the states the policy actually visits |

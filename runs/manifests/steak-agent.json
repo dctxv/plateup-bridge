@@ -1,9 +1,9 @@
 {
   "artifacts": [
     {
-      "bytes": 23517,
+      "bytes": 25156,
       "path": "runs\\selftest\\offline-gate.json",
-      "sha256": "53924E5436A3240CB00B7205F5CDB9AF39C401FC5E288BDB8198A39EA3FBF231"
+      "sha256": "37A53B4270594BC76921E1654C12A93278B114F4FDC9FB9BF925A21CC53B1ECA"
     },
     {
       "bytes": 10942,
@@ -73,34 +73,13 @@
   ],
   "code": {
     "branch": "main",
-    "commit": "277b867ec5ff3fd715c4620ef494aada1a39a32f",
+    "commit": "341737111a2b93dfc9d7f34a4a7524c175d6a7c5",
     "dirty": true,
     "dirty_files": [
-      ".gitignore",
-      "README.md",
-      "docs/agent-architecture.md",
-      "docs/learning-pipeline.md",
-      "docs/phase-g-decision.md",
+      "EADME.md",
       "docs/verified-successes.md",
-      "python/antihack.py",
-      "python/dagger.py",
-      "python/dataset.py",
-      "python/encode.py",
-      "python/env.py",
-      "python/evaluate.py",
-      "python/manifest.py",
-      "python/mockgame.py",
-      "python/options.py",
-      "python/policy.py",
+      "python/livecheck.py",
       "python/selftest.py",
-      "python/service.py",
-      "runs/antihack/",
-      "runs/benchmark/policy-comparison.json",
-      "runs/benchmark/policy-split.json",
-      "runs/capability/mock-reference.json",
-      "runs/env/random-soak.json",
-      "runs/manifests/",
-      "runs/policies/",
       "runs/selftest/offline-gate.json"
     ]
   },
@@ -112,7 +91,7 @@
     "win32file": "present"
   },
   "evidence_class": "offline: produced against mockgame and recorded artifacts, not the live game",
-  "note": "Steak agent: offline gate, learning pipeline, and the Phase G decision",
+  "note": "Steak agent: offline gate, learning pipeline, Phase G decision, live verifier",
   "pinned_build": {
     "bridge_version": "0.3.0",
     "game_version": "1.4.3-FF8F",
@@ -135,5 +114,5 @@
     "obs_schema": "obs_0.1",
     "policy_schema": "policy_0.1"
   },
-  "written_at": "2026-07-30T02:06:23"
+  "written_at": "2026-07-30T21:47:09"
 }

@@ -517,7 +517,7 @@
       "passed": true
     },
     {
-      "detail": "[0, 0, 0, 1, 0, 1, 0]",
+      "detail": "[1, 0, 0, 0, 0, 0, 0]",
       "group": "env",
       "name": "sampled action is inside the action space",
       "passed": true
@@ -827,8 +827,56 @@
       "group": "manifest",
       "name": "a changed artifact is detected",
       "passed": true
+    },
+    {
+      "detail": "{}",
+      "group": "livecheck",
+      "name": "the live checker finds no contradiction in the steak day",
+      "passed": true
+    },
+    {
+      "detail": "median error 6.5 deg over 30 steady samples (a swapped axis would read ~90, a flipped one ~180)",
+      "group": "livecheck",
+      "name": "it confirms the rotation convention from displacement alone",
+      "passed": true
+    },
+    {
+      "detail": "provider, table linkage and group position",
+      "group": "livecheck",
+      "name": "it confirms the provider and table findings live",
+      "passed": true
+    },
+    {
+      "detail": "14 appliance slots got a new entity id crossing day 0 -> 1",
+      "group": "livecheck",
+      "name": "it confirms entity recycling across the day boundary",
+      "passed": true
+    },
+    {
+      "detail": "the smoke recording never cooked or washed",
+      "group": "livecheck",
+      "name": "it leaves untriggered checks PENDING rather than passing them",
+      "passed": true
+    },
+    {
+      "detail": "live a95958844ee81fd6 != ledger 164a7ae4f2c796e3; rebuild an",
+      "group": "livecheck",
+      "name": "it rejects a recording made with a different mod build",
+      "passed": true
+    },
+    {
+      "detail": "floor mess and group position hold on the burger day too",
+      "group": "livecheck",
+      "name": "it still confirms the build-independent findings",
+      "passed": true
+    },
+    {
+      "detail": "21 checks serialised",
+      "group": "livecheck",
+      "name": "its report and payload are well formed",
+      "passed": true
     }
   ],
   "failed": 0,
-  "total": 138
+  "total": 146
 }

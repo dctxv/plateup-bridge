@@ -57,15 +57,16 @@ sample count has not been reached.
 | Recipe benchmark result | Not started. No benchmark session has been recorded. | PENDING |
 | Project 1 recipe | Fixed to steak by project-owner scope decision, **not** by the benchmark. | DECIDED (scope) |
 | Observation facts from artifacts | Rotation zero, provider infinity, floor mess, table linkage and entity recycling derived; 14/14 checks pass. | PASS (offline) |
-| Steak agent offline gate | 100/100 checks across facts, geometry, recipe, options, model, service, capability, surrogate and environment. | PASS (offline) |
-| Steak agent in the live game | Never run. No live evidence exists for any agent layer. | PENDING |
-| Environment API and random soak | 11/11 API checks; 20,000 random actions with a constant observation shape and stated terminal reasons, on the offline model. | PASS (offline) |
+| Steak agent offline gate | 146/146 checks across facts, geometry, recipe, options, model, service, capability, surrogate, environment, preparation, learning, reward hacking, manifests and the live verifier. | PASS (offline) |
+| Steak agent in the live game | Never run. No live evidence exists for any agent layer. `python python\livecheck.py` is the read-only tool that settles the offline assumptions first. | PENDING |
+| Environment API and random soak | 12/12 API checks; 20,000 random actions with a constant observation shape and stated terminal reasons, on the offline model. | PASS (offline) |
 | Capability registry | Measured against the offline model only. No live rows exist. | PROVISIONAL |
 | Preparation phase handling | Popup cleared with Cancel, consent given once, day started; verified against the model and the recorded day 0 checklist. | PASS (offline) |
 | Behaviour-cloning pipeline | Datasets from human recordings and from the model; goal-conditioned policy trains and round-trips. | PASS (offline) |
 | Learned motor policy, Phase G gate | Best observed 1 group of 4; best-validated 0, against a baseline of 4. Movement is the gap: learned buttons alone reach parity. | FAIL (gate not met, decision written) |
 | Reward-hacking suite | 12 of 14 section 11.3 adversaries closed against the model; 2 are live-only and stay OPEN. | PASS (offline, partial) |
 | Evidence bundle | Run manifests record code, schemas, pinned build and artifact hashes, and re-check them. | PASS (offline) |
+| Live verifier | `livecheck.py` replays correctly against both recordings: 13 claims confirmed, untriggered ones left PENDING, and a recording from a different mod build rejected. | PASS (offline) |
 
 ---
 
@@ -603,7 +604,7 @@ here has ever run against PlateUp.
 - **Acceptance gate:** every check passes, across nine groups: facts,
   geometry, steak, options, model, service, capability, surrogate and
   environment.
-- **Observed:** **100 of 100** checks passed, 0 failed.
+- **Observed:** **146 of 146** checks passed, 0 failed.
   - Geometry: every working appliance in the recorded steak layout has a
     reachable approach pose with a positive aim clearance, and all three
     recorded human delivery stances pass the same aim model the planner uses.
@@ -613,8 +614,16 @@ here has ever run against PlateUp.
   - Options: acquire, place, watch-cook, plate and buffer complete against the
     model; invalidation, timeout, neutral release and the grab press/release
     edge are classified as specified.
-  - Environment: 11 API checks plus a 12,000-step random-action soak.
-- **Result:** `OK -- 100 offline checks passed. This is an offline gate and not
+  - Environment: 12 API checks plus a 12,000-step random-action soak.
+  - Preparation: the day-0 checklist, a popup cleared with Cancel only,
+    consent given once, and the toggle behaviour that would otherwise stall a
+    live run.
+  - Learning: dataset alignment from a real recording, episode-level splits,
+    training, checkpoint round-trip and the metric harness.
+  - Live verifier: `livecheck.py` replayed against both recordings, confirming
+    it reaches the right verdicts and correctly rejects a recording made with a
+    different mod build.
+- **Result:** `OK -- 146 offline checks passed. This is an offline gate and not
   live-game evidence.`
 - **Status:** PASS (offline).
 - **Limitations:** a pass means the agent code is internally consistent and
@@ -818,6 +827,29 @@ here has ever run against PlateUp.
   so most of these are structurally impossible rather than merely
   unprofitable, but that design is only as good as the model it was checked
   against.
+
+
+### 4B.8 Live verifier, validated offline
+
+- **Date:** 2026-07-30
+- **Command:** `python python\selftest.py --only livecheck`
+- **What it is:** `python python\livecheck.py` connects read-only with F9 off,
+  sends only the neutral heartbeat, and marks 21 falsifiable claims as the
+  evidence for each one arrives while a human plays. It cannot move the chef.
+- **Acceptance gate:** replayed against both recordings it must reach the right
+  verdicts, must leave untriggered claims PENDING rather than passing them, and
+  must reject a recording produced by a different mod build.
+- **Observed:** 8 of 8 checks passed. On the steak recording it confirms 13
+  claims with no contradiction and leaves 8 PENDING, which are exactly the
+  actions that recording never performed. On the golden trace it correctly
+  **fails** the provenance check, because that trace was recorded with bridge
+  `0.2.4` rather than `0.3.0`.
+- **Status:** PASS for the verifier itself, offline.
+- **Limitations:** this validates the tool, not the claims. The claims are still
+  unverified in the live game, which is the entire point of the tool existing.
+  Three of them are the ones most likely to fail: the steak cook stage
+  durations (knowledge-base priors, never observed), the plating route, and
+  whether `StopMoving` leaves `Movement` intact for aiming.
 
 ---
 
